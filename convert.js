@@ -30,8 +30,8 @@ const defaultSelector = [
 ];
 
 const globalProxies = [
-    "节点选择", "手动切换", "自动选择", "人工智能", "加密货币", "Telegram", "Microsoft", "Apple", "Google", "YouTube", "Netflix", "Disney", "HBO Max", "Spotify", "TikTok",
-    "E-Hentai", "PikPak", "巴哈姆特", "哔哩哔哩", "新浪微博", "Twitter(X)", "Truth Social", "学术资源", "瑟琴网站", "游戏平台", "Speedtest", "静态资源",
+    "节点选择", "手动切换", "自动选择", "人工智能", "加密货币", "PayPal", "Telegram", "Microsoft", "Apple", "Google", "YouTube", "Netflix", "Disney", "HBO Max", "Spotify", "TikTok",
+    "E-Hentai", "PikPak", "巴哈姆特", "哔哩哔哩", "新浪微博", "Twitter(X)", "Truth Social", "学术资源", "开发者资源", "瑟琴网站", "游戏平台", "Speedtest", "静态资源",
     "FCM推送", "SSH(22端口)", "Steam修复", "Play商店修复", "搜狗输入", "全球直连", "广告拦截"
 ];
 
@@ -100,6 +100,11 @@ const ruleProviders = {
         "type": "http", "behavior": "classical", "format": "text", "interval": 86400,
         "url": "https://fastly.jsdelivr.net/gh/powerfullz/override-rules@master/ruleset/Weibo.list",
         "path": "./ruleset/Weibo.list"
+    },
+    "AdditionalCDNResources": {
+        "type": "http", "behavior": "classical", "format": "text", "interval": 86400,
+        "url": "https://fastly.jsdelivr.net/gh/powerfullz/override-rules@master/ruleset/AdditionalCDNResources.list",
+        "path": "./ruleset/AdditionalCDNResources.list"
     }
 }
 
@@ -110,6 +115,7 @@ const rules = [
     "RULE-SET,TruthSocial,Truth Social",
     "RULE-SET,StaticResources,静态资源",
     "RULE-SET,CDNResources,静态资源",
+    "RULE-SET,AdditionalCDNResources,静态资源",
     "RULE-SET,AI,人工智能",
     "RULE-SET,EHentai,E-Hentai",
     "RULE-SET,TikTok,TikTok",
@@ -117,11 +123,12 @@ const rules = [
     "RULE-SET,PlayStoreFix,Play商店修复",
     "RULE-SET,GoogleFCM,FCM推送",
     "RULE-SET,Weibo,新浪微博",
+    "GEOSITE,PAYPAL@CN,全球直连",
+    "GEOSITE,PAYPAL,PayPal",
     "GEOSITE,GOOGLE-PLAY@CN,全球直连",
     "GEOSITE,APPLE@CN,全球直连",
     "GEOSITE,APPLE,Apple",
-    "GEOSITE,MICROSOFT@CN,全球直连",
-    "GEOSITE,MICROSOFT,Microsoft",
+    "GEOSITE,TELEGRAM,Telegram",
     "GEOSITE,YOUTUBE@CN,全球直连",
     "GEOSITE,YOUTUBE,YouTube",
     "GEOSITE,GOOGLE,Google",
@@ -133,13 +140,15 @@ const rules = [
     "GEOSITE,BAHAMUT,巴哈姆特",
     "GEOSITE,BILIBILI,哔哩哔哩",
     "GEOSITE,OOKLA-SPEEDTEST,Speedtest",
+    "GEOSITE,CATEGORY-DEV,开发者资源",
     "GEOSITE,CATEGORY-PORN,瑟琴网站",
     "GEOSITE,CATEGORY-GAMES@CN,全球直连",
     "GEOSITE,CATEGORY-GAMES,游戏平台",
     "GEOSITE,CATEGORY-SCHOLAR-!CN,学术资源",
     "GEOSITE,CATEGORY-SCHOLAR-CN,全球直连",
     "GEOSITE,CATEGORY-CRYPTOCURRENCY,加密货币",
-    "GEOSITE,TELEGRAM,Telegram",
+    "GEOSITE,MICROSOFT@CN,全球直连",
+    "GEOSITE,MICROSOFT,Microsoft",
     "GEOSITE,PIKPAK,PikPak",
     "GEOSITE,CN,全球直连",
     "GEOSITE,PRIVATE,全球直连",
@@ -194,6 +203,7 @@ const dnsConfig = {
         "tls://dns.alidns.com",
     ],
     "fallback": [
+        "quic://dns0.eu",
         "https://dns.cloudflare.com/dns-query",
         "https://dns.sb/dns-query",
         "tcp://208.67.222.222",
@@ -221,7 +231,7 @@ const countryRegex = {
     "韩国": "(?i)KR|Korea|KOR|首尔|韩|韓",
     "美国": "(?i)美国|美|US|United States",
     "加拿大": "(?i)加拿大|Canada|CA",
-    "英国": "(?i)英国|UK|伦敦|London",
+    "英国": "(?i)英国|United Kingdom|UK|伦敦|London",
     "澳大利亚": "(?i)澳洲|澳大利亚|AU|Australia",
     "德国": "(?i)德国|德|DE|Germany",
     "法国": "(?i)法国|法|FR|France",
@@ -239,8 +249,21 @@ function parseBool(value) {
     return false;
 }
 
+function hasLowCost(config) {
+    // 检查是否有低倍率节点
+    const proxies = config["proxies"];
+    const lowCostRegex = new RegExp(/0\.[0-5]|低倍率|省流|大流量|实验性/, 'i');
+    for (const proxy of proxies) {
+        if (lowCostRegex.test(proxy.name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function parseCountries(config) {
     const proxies = config["proxies"];
+    const ispRegex = new RegExp(/家宽|家庭|家庭宽带|商宽|商业宽带|星链|Starlink|落地/, 'i');    // 排除落地节点
     const result = [];
     const seen = new Set(); // 用于去重
 
@@ -253,7 +276,7 @@ function parseCountries(config) {
 
         for (const proxy of proxies) {
             const name = proxy.name;
-            if (regex.test(name)) {
+            if (regex.test(name) && !ispRegex.test(name)) {
                 // 防止重复添加国家名称
                 if (!seen.has(country)) {
                     seen.add(country);
@@ -300,7 +323,7 @@ function buildCountryProxyGroups(countryList) {
                 "icon": countryIconURLs[country],
                 "include-all": true,
                 "filter": pattern,
-                "exclude-filter": "(?i)家宽|家庭|商宽|落地",
+                "exclude-filter": "(?i)家宽|家庭|家庭宽带|商宽|商业宽带|星链|Starlink|落地|0\.[0-5]|低倍率|省流|大流量|实验性",
                 "type": (loadBalance) ? "load-balance" : "url-test",
             };
 
@@ -319,7 +342,7 @@ function buildCountryProxyGroups(countryList) {
     return countryProxyGroups;
 }
 
-function buildProxyGroups(countryList, countryProxyGroups) {
+function buildProxyGroups(countryList, countryProxyGroups, lowCost) {
     // 查看是否有特定国家的节点
     const hasTW = countryList.includes("台湾");
     const hasHK = countryList.includes("香港");
@@ -336,14 +359,14 @@ function buildProxyGroups(countryList, countryProxyGroups) {
             "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Airport.png",
             "type": "select",
             "include-all": true,
-            "filter": "(?i)家宽|家庭|商宽|落地",
+            "filter": "(?i)家宽|家庭|家庭宽带|商宽|商业宽带|星链|Starlink|落地",
         } : null,
         (landing) ? {
             "name": "前置代理",
-            "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Proxy.png",
+            "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Area.png",
             "type": "select",
             "include-all": true,
-            "exclude-filter": "(?i)家宽|家庭|商宽|落地",
+            "exclude-filter": "(?i)家宽|家庭|家庭宽带|商宽|商业宽带|星链|Starlink|落地",
             "proxies": defaultSelector
         } : null,
         {
@@ -357,7 +380,7 @@ function buildProxyGroups(countryList, countryProxyGroups) {
             "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Auto.png",
             "type": "url-test",
             "include-all": true,
-            "exclude-filter": "(?i)家宽|家庭|商宽|落地",
+            "exclude-filter": "(?i)家宽|家庭|家庭宽带|商宽|商业宽带|星链|Starlink|落地",
             "interval": 300,
             "tolerance": 20,
             "lazy": false
@@ -371,6 +394,12 @@ function buildProxyGroups(countryList, countryProxyGroups) {
         {
             "name": "加密货币",
             "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Cryptocurrency_3.png",
+            "type": "select",
+            "proxies": defaultProxies
+        },
+        {
+            "name": "PayPal",
+            "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/PayPal.png",
             "type": "select",
             "proxies": defaultProxies
         },
@@ -450,7 +479,7 @@ function buildProxyGroups(countryList, countryProxyGroups) {
             "name": "哔哩哔哩",
             "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/bilibili.png",
             "type": "select",
-            "proxies": (hasTW && hasHK) ? ["全球直连", "台湾节点", "香港节点"] : defaultProxies
+            "proxies": (hasTW && hasHK) ? ["全球直连", "台湾节点", "香港节点"] : defaultProxiesDirect
         },
         {
             "name": "Twitter(X)",
@@ -478,6 +507,12 @@ function buildProxyGroups(countryList, countryProxyGroups) {
             "proxies": [
                 "节点选择", "手动切换", "全球直连"
             ]
+        },
+        {
+            "name": "开发者资源",
+            "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/GitHub.png",
+            "type": "select",
+            "proxies": defaultProxies
         },
         {
             "name": "瑟琴网站",
@@ -565,6 +600,13 @@ function buildProxyGroups(countryList, countryProxyGroups) {
             ]
         },
         ...countryProxyGroups,
+        lowCost ? {
+            "name": "低倍率节点",
+            "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Lab.png",
+            "type": (loadBalance) ? "load-balance" : "url-test",
+            "include-all": true,
+            "filter": "(?i)0\.[0-5]|低倍率|省流|大流量|实验性"
+        } : null,
         {
             "name": "GLOBAL",
             "icon": "https://fastly.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Global.png",
@@ -578,6 +620,7 @@ function buildProxyGroups(countryList, countryProxyGroups) {
 function main(config) {
     // 查看当前有哪些国家的节点
     const countryList = parseCountries(config);
+    const lowCost = hasLowCost(config);
     const countryProxies = [];
     
     // 修改默认代理组
@@ -586,6 +629,12 @@ function main(config) {
         globalProxies.push(groupName);
         countryProxies.push(groupName);
     }
+
+    if (lowCost) {
+        countryProxies.push("低倍率节点");     // 懒得再搞一个低倍率节点组了
+        globalProxies.push("低倍率节点");
+    }
+
     defaultProxies.splice(1, 0, ...countryProxies);
     defaultSelector.splice(1, 0, ...countryProxies);
     defaultProxiesDirect.splice(2, 0, ...countryProxies);
@@ -604,7 +653,7 @@ function main(config) {
     // 生成国家节点组
     const countryProxyGroups = buildCountryProxyGroups(countryList);
     // 生成代理组
-    const proxyGroups = buildProxyGroups(countryList, countryProxyGroups);
+    const proxyGroups = buildProxyGroups(countryList, countryProxyGroups, lowCost);
 
     if (fullConfig) Object.assign(config, {
         "mixed-port": 7890,

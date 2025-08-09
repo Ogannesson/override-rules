@@ -1,5 +1,5 @@
 /*
-powerfullz 的 Substore 订阅转换脚本 - 修改版（优先国旗emoji匹配）
+powerfullz 的 Substore 订阅转换脚本 - 修改版（仅使用国旗emoji匹配）
 https://github.com/powerfullz/override-rules
 传入参数：
 - loadbalance: 启用负载均衡 (默认false)
@@ -37,7 +37,7 @@ const globalProxies = [
     "FCM推送", "SSH(22端口)", "Steam修复", "Play商店修复", "搜狗输入", "全球直连", "广告拦截"
 ];
 
-// 新增：国旗emoji到地区的映射（优先级最高）
+// 国旗emoji到地区的映射
 const countryFlags = {
     "🇭🇰": "香港",
     "🇲🇴": "澳门",
@@ -57,24 +57,24 @@ const countryFlags = {
     "🇲🇾": "马来西亚"
 };
 
-// 地区正则表达式
+// 仅用于过滤器的正则表达式（保留用于buildCountryProxyGroups函数）
 const countryRegex = {
-    "香港": "(?i)🇭🇰|香港|港|HK|hk|Hong Kong|HongKong|hongkong",
-    "澳门": "(?i)🇲🇴|澳门|MO|Macau",
-    "台湾": "(?i)🇹🇼|台湾|台|新北|彰化|TW|Taiwan",
-    "新加坡": "(?i)🇸🇬|新加坡|坡|狮城|SG|Singapore",
-    "日本": "(?i)🇯🇵|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan",
-    "韩国": "(?i)🇰🇷|KR|Korea|KOR|首尔|韩|韓",
-    "美国": "(?i)🇺🇸|美国|美|US|United States",
-    "加拿大": "(?i)🇨🇦|加拿大|Canada|CA",
-    "英国": "(?i)🇬🇧|英国|United Kingdom|UK|伦敦|London",
-    "澳大利亚": "(?i)🇦🇺|澳洲|澳大利亚|AU|Australia",
-    "德国": "(?i)🇩🇪|德国|德|DE|Germany",
-    "法国": "(?i)🇫🇷|法国|法|FR|France",
-    "俄罗斯": "(?i)🇷🇺|俄罗斯|俄|RU|Russia",
-    "泰国": "(?i)🇹🇭|泰国|泰|TH|Thailand",
-    "印度": "(?i)🇮🇳|印度|IN|India",
-    "马来西亚": "(?i)🇲🇾|马来西亚|马来|MY|Malaysia",
+    "香港": "(?i)🇭🇰",
+    "澳门": "(?i)🇲🇴",
+    "台湾": "(?i)🇹🇼",
+    "新加坡": "(?i)🇸🇬",
+    "日本": "(?i)🇯🇵",
+    "韩国": "(?i)🇰🇷",
+    "美国": "(?i)🇺🇸",
+    "加拿大": "(?i)🇨🇦",
+    "英国": "(?i)🇬🇧",
+    "澳大利亚": "(?i)🇦🇺",
+    "德国": "(?i)🇩🇪",
+    "法国": "(?i)🇫🇷",
+    "俄罗斯": "(?i)🇷🇺",
+    "泰国": "(?i)🇹🇭",
+    "印度": "(?i)🇮🇳",
+    "马来西亚": "(?i)🇲🇾",
 }
 
 const ruleProviders = {
@@ -267,6 +267,11 @@ const geoxURL = {
     "asn": "https://cdn.jsdelivr.net/gh/Loyalsoldier/geoip@release/GeoLite2-ASN.mmdb"
 };
 
+/**
+ * 解析布尔值参数
+ * @param {*} value - 要解析的值
+ * @returns {boolean} - 解析后的布尔值
+ */
 function parseBool(value) {
     if (typeof value === "boolean") return value;
     if (typeof value === "string") {
@@ -275,8 +280,12 @@ function parseBool(value) {
     return false;
 }
 
+/**
+ * 检查是否有低倍率节点
+ * @param {Object} config - 配置对象
+ * @returns {boolean} - 是否存在低倍率节点
+ */
 function hasLowCost(config) {
-    // 检查是否有低倍率节点
     const proxies = config["proxies"];
     const lowCostRegex = new RegExp(/0\.[0-5]|低倍率|省流|大流量|实验性/, 'i');
     for (const proxy of proxies) {
@@ -287,22 +296,17 @@ function hasLowCost(config) {
     return false;
 }
 
-// 优先使用国旗emoji匹配
+/**
+ * 仅使用国旗emoji匹配地区
+ * @param {Object} config - 配置对象
+ * @returns {Array} - 地区统计结果数组
+ */
 function parseCountries(config) {
     const proxies = config.proxies || [];
     const ispRegex = /家宽|家庭|家庭宽带|商宽|商业宽带|星链|Starlink|落地/i;   // 需要排除的关键字
 
     // 用来累计各国节点数
     const countryCounts = Object.create(null);
-
-    // 构建地区正则表达式，去掉 (?i) 前缀
-    const compiledRegex = {};
-    for (const [country, pattern] of Object.entries(countryRegex)) {
-        compiledRegex[country] = new RegExp(
-            pattern.replace(/^\(\?i\)/, ''),
-            'i'
-        );
-    }
 
     // 逐个节点进行匹配与统计
     for (const proxy of proxies) {
@@ -313,21 +317,11 @@ function parseCountries(config) {
 
         let country = null;
 
-        // 第一优先级：通过国旗emoji匹配
+        // 仅使用国旗emoji匹配地区
         for (const [flag, countryName] of Object.entries(countryFlags)) {
             if (name.includes(flag)) {
                 country = countryName;
                 break;
-            }
-        }
-
-        // 第二优先级：如果国旗emoji未匹配到，使用正则表达式匹配
-        if (!country) {
-            for (const [countryName, regex] of Object.entries(compiledRegex)) {
-                if (regex.test(name)) {
-                    country = countryName;
-                    break;    // 避免一个节点同时累计到多个地区
-                }
             }
         }
 
@@ -346,6 +340,11 @@ function parseCountries(config) {
     return result;   // [{ country: 'Japan', count: 12 }, ...]
 }
 
+/**
+ * 构建地区代理组
+ * @param {Array} countryList - 地区列表
+ * @returns {Array} - 地区代理组配置数组
+ */
 function buildCountryProxyGroups(countryList) {
     const countryIconURLs = {
         "香港": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Hong_Kong.png",
@@ -400,11 +399,18 @@ function buildCountryProxyGroups(countryList) {
     return countryProxyGroups;
 }
 
+/**
+ * 构建代理组配置
+ * @param {Array} countryList - 地区列表
+ * @param {Array} countryProxyGroups - 地区代理组配置
+ * @param {boolean} lowCost - 是否有低倍率节点
+ * @returns {Array} - 完整的代理组配置数组
+ */
 function buildProxyGroups(countryList, countryProxyGroups, lowCost) {
     // 查看是否有特定地区的节点
-    const hasTW = countryList.includes("台湾");
-    const hasHK = countryList.includes("香港");
-    const hasUS = countryList.includes("美国");
+    const hasTW = countryList.includes("🇹🇼");
+    const hasHK = countryList.includes("🇭🇰");
+    const hasUS = countryList.includes("🇺🇸");
     return [
         {
             "name": "节点选择",
@@ -663,6 +669,11 @@ function buildProxyGroups(countryList, countryProxyGroups, lowCost) {
     ].filter(Boolean); // 过滤掉 null 值
 }
 
+/**
+ * 主函数 - 处理配置文件
+ * @param {Object} config - 输入的配置对象
+ * @returns {Object} - 处理后的配置对象
+ */
 function main(config) {
     // 查看当前有哪些地区的节点
     const countryInfo = parseCountries(config);

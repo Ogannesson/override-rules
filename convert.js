@@ -57,24 +57,24 @@ const countryFlags = {
     "🇲🇾": "马来西亚"
 };
 
-// 修改后的地区正则表达式（作为备用匹配）
+// 地区正则表达式
 const countryRegex = {
-    "香港": "(?i)香港|港|HK|hk|Hong Kong|HongKong|hongkong",
-    "澳门": "(?i)澳门|MO|Macau",
-    "台湾": "(?i)台湾|台|新北|彰化|TW|Taiwan",
-    "新加坡": "(?i)新加坡|坡|狮城|SG|Singapore",
-    "日本": "(?i)日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan",
-    "韩国": "(?i)KR|Korea|KOR|首尔|韩|韓",
-    "美国": "(?i)美国|美|US|United States",
-    "加拿大": "(?i)加拿大|Canada|CA",
-    "英国": "(?i)英国|United Kingdom|UK|伦敦|London",
-    "澳大利亚": "(?i)澳洲|澳大利亚|AU|Australia",
-    "德国": "(?i)德国|德|DE|Germany",
-    "法国": "(?i)法国|法|FR|France",
-    "俄罗斯": "(?i)俄罗斯|俄|RU|Russia",
-    "泰国": "(?i)泰国|泰|TH|Thailand",
-    "印度": "(?i)印度|IN|India",
-    "马来西亚": "(?i)马来西亚|马来|MY|Malaysia",
+    "香港": "(?i)🇭🇰|香港|港|HK|hk|Hong Kong|HongKong|hongkong",
+    "澳门": "(?i)🇲🇴|澳门|MO|Macau",
+    "台湾": "(?i)🇹🇼|台湾|台|新北|彰化|TW|Taiwan",
+    "新加坡": "(?i)🇸🇬|新加坡|坡|狮城|SG|Singapore",
+    "日本": "(?i)🇯🇵|日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan",
+    "韩国": "(?i)🇰🇷|KR|Korea|KOR|首尔|韩|韓",
+    "美国": "(?i)🇺🇸|美国|美|US|United States",
+    "加拿大": "(?i)🇨🇦|加拿大|Canada|CA",
+    "英国": "(?i)🇬🇧|英国|United Kingdom|UK|伦敦|London",
+    "澳大利亚": "(?i)🇦🇺|澳洲|澳大利亚|AU|Australia",
+    "德国": "(?i)🇩🇪|德国|德|DE|Germany",
+    "法国": "(?i)🇫🇷|法国|法|FR|France",
+    "俄罗斯": "(?i)🇷🇺|俄罗斯|俄|RU|Russia",
+    "泰国": "(?i)🇹🇭|泰国|泰|TH|Thailand",
+    "印度": "(?i)🇮🇳|印度|IN|India",
+    "马来西亚": "(?i)🇲🇾|马来西亚|马来|MY|Malaysia",
 }
 
 const ruleProviders = {

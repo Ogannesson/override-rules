@@ -16,7 +16,6 @@ const loadBalance = parseBool(inArg.loadbalance) || false,
     fullConfig = parseBool(inArg.full) || false,
     enableKeepAlive = parseBool(inArg.keepalive) || false;
 
-
 // 生成默认代理组
 const defaultProxies = [
     "节点选择", "手动切换", "全球直连"
@@ -60,7 +59,7 @@ const countryFlags = {
 
 // 修改后的地区正则表达式（作为备用匹配）
 const countryRegex = {
-    "香港": "(?i)香港|港|HK|hk|Hong Kong|HongKong|hongkong|CLAW",
+    "香港": "(?i)香港|港|HK|hk|Hong Kong|HongKong|hongkong",
     "澳门": "(?i)澳门|MO|Macau",
     "台湾": "(?i)台湾|台|新北|彰化|TW|Taiwan",
     "新加坡": "(?i)新加坡|坡|狮城|SG|Singapore",
@@ -154,7 +153,6 @@ const ruleProviders = {
         "url": "https://ruleset.skk.moe/Clash/domainset/speedtest.txt",
         "path": "./ruleset/SpeedTest.list"
     },
-
 }
 
 const rules = [
@@ -289,7 +287,7 @@ function hasLowCost(config) {
     return false;
 }
 
-// 修改后的地区识别函数：优先使用国旗emoji匹配
+// 优先使用国旗emoji匹配
 function parseCountries(config) {
     const proxies = config.proxies || [];
     const ispRegex = /家宽|家庭|家庭宽带|商宽|商业宽带|星链|Starlink|落地/i;   // 需要排除的关键字
@@ -348,7 +346,6 @@ function parseCountries(config) {
     return result;   // [{ country: 'Japan', count: 12 }, ...]
 }
 
-
 function buildCountryProxyGroups(countryList) {
     const countryIconURLs = {
         "香港": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Hong_Kong.png",
@@ -368,7 +365,6 @@ function buildCountryProxyGroups(countryList) {
         "澳门": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Macao.png",
         "法国": "https://cdn.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/France.png",
     };
-    // 获取实际存在的地区列表
 
     const countryProxyGroups = [];
 

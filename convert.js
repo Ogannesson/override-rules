@@ -1,5 +1,5 @@
 /*
-powerfullz 的 Substore 订阅转换脚本
+powerfullz 的 Substore 订阅转换脚本 - 修改版（优先国旗emoji匹配）
 https://github.com/powerfullz/override-rules
 传入参数：
 - loadbalance: 启用负载均衡 (默认false)
@@ -34,9 +34,49 @@ const defaultFallback = [];
 
 const globalProxies = [
     "节点选择", "手动切换", "故障转移", "静态资源", "人工智能", "加密货币", "PayPal", "Telegram", "Microsoft", "Apple", "Google", "YouTube", "Netflix", "Spotify", "TikTok",
-    "E-Hentai", "PikPak", "巴哈姆特", "哔哩哔哩", "新浪微博", "Twitter(X)", "Truth Social", "学术资源", "开发者资源", "瑟琴网站", "游戏平台", "测速服务", 
+    "E-Hentai", "PikPak", "巴哈姆特", "哔哩哔哩", "新浪微博", "Twitter(X)", "Truth Social", "学术资源", "开发者资源", "瑟琴网站", "游戏平台", "测速服务",
     "FCM推送", "SSH(22端口)", "Steam修复", "Play商店修复", "搜狗输入", "全球直连", "广告拦截"
 ];
+
+// 新增：国旗emoji到地区的映射（优先级最高）
+const countryFlags = {
+    "🇭🇰": "香港",
+    "🇲🇴": "澳门",
+    "🇹🇼": "台湾",
+    "🇸🇬": "新加坡",
+    "🇯🇵": "日本",
+    "🇰🇷": "韩国",
+    "🇺🇸": "美国",
+    "🇨🇦": "加拿大",
+    "🇬🇧": "英国",
+    "🇦🇺": "澳大利亚",
+    "🇩🇪": "德国",
+    "🇫🇷": "法国",
+    "🇷🇺": "俄罗斯",
+    "🇹🇭": "泰国",
+    "🇮🇳": "印度",
+    "🇲🇾": "马来西亚"
+};
+
+// 修改后的地区正则表达式（作为备用匹配）
+const countryRegex = {
+    "香港": "(?i)香港|港|HK|hk|Hong Kong|HongKong|hongkong|CLAW",
+    "澳门": "(?i)澳门|MO|Macau",
+    "台湾": "(?i)台湾|台|新北|彰化|TW|Taiwan",
+    "新加坡": "(?i)新加坡|坡|狮城|SG|Singapore",
+    "日本": "(?i)日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan",
+    "韩国": "(?i)KR|Korea|KOR|首尔|韩|韓",
+    "美国": "(?i)美国|美|US|United States",
+    "加拿大": "(?i)加拿大|Canada|CA",
+    "英国": "(?i)英国|United Kingdom|UK|伦敦|London",
+    "澳大利亚": "(?i)澳洲|澳大利亚|AU|Australia",
+    "德国": "(?i)德国|德|DE|Germany",
+    "法国": "(?i)法国|法|FR|France",
+    "俄罗斯": "(?i)俄罗斯|俄|RU|Russia",
+    "泰国": "(?i)泰国|泰|TH|Thailand",
+    "印度": "(?i)印度|IN|India",
+    "马来西亚": "(?i)马来西亚|马来|MY|Malaysia",
+}
 
 const ruleProviders = {
     "ADBlock": {
@@ -229,25 +269,6 @@ const geoxURL = {
     "asn": "https://cdn.jsdelivr.net/gh/Loyalsoldier/geoip@release/GeoLite2-ASN.mmdb"
 };
 
-const countryRegex = {
-    "香港": "(?i)香港|港|HK|hk|Hong Kong|HongKong|hongkong",
-    "澳门": "(?i)澳门|MO|Macau",
-    "台湾": "(?i)台|新北|彰化|TW|Taiwan",
-    "新加坡": "(?i)新加坡|坡|狮城|SG|Singapore",
-    "日本": "(?i)日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan",
-    "韩国": "(?i)KR|Korea|KOR|首尔|韩|韓",
-    "美国": "(?i)美国|美|US|United States",
-    "加拿大": "(?i)加拿大|Canada|CA",
-    "英国": "(?i)英国|United Kingdom|UK|伦敦|London",
-    "澳大利亚": "(?i)澳洲|澳大利亚|AU|Australia",
-    "德国": "(?i)德国|德|DE|Germany",
-    "法国": "(?i)法国|法|FR|France",
-    "俄罗斯": "(?i)俄罗斯|俄|RU|Russia",
-    "泰国": "(?i)泰国|泰|TH|Thailand",
-    "印度": "(?i)印度|IN|India",
-    "马来西亚": "(?i)马来西亚|马来|MY|Malaysia",
-}
-
 function parseBool(value) {
     if (typeof value === "boolean") return value;
     if (typeof value === "string") {
@@ -268,6 +289,7 @@ function hasLowCost(config) {
     return false;
 }
 
+// 修改后的地区识别函数：优先使用国旗emoji匹配
 function parseCountries(config) {
     const proxies = config.proxies || [];
     const ispRegex = /家宽|家庭|家庭宽带|商宽|商业宽带|星链|Starlink|落地/i;   // 需要排除的关键字
@@ -291,12 +313,29 @@ function parseCountries(config) {
         // 过滤掉不想统计的 ISP 节点
         if (ispRegex.test(name)) continue;
 
-        // 找到第一个匹配到的地区就计数并终止本轮
-        for (const [country, regex] of Object.entries(compiledRegex)) {
-            if (regex.test(name)) {
-                countryCounts[country] = (countryCounts[country] || 0) + 1;
-                break;    // 避免一个节点同时累计到多个地区
+        let country = null;
+
+        // 第一优先级：通过国旗emoji匹配
+        for (const [flag, countryName] of Object.entries(countryFlags)) {
+            if (name.includes(flag)) {
+                country = countryName;
+                break;
             }
+        }
+
+        // 第二优先级：如果国旗emoji未匹配到，使用正则表达式匹配
+        if (!country) {
+            for (const [countryName, regex] of Object.entries(compiledRegex)) {
+                if (regex.test(name)) {
+                    country = countryName;
+                    break;    // 避免一个节点同时累计到多个地区
+                }
+            }
+        }
+
+        // 统计结果
+        if (country) {
+            countryCounts[country] = (countryCounts[country] || 0) + 1;
         }
     }
 
@@ -637,12 +676,11 @@ function main(config) {
     if (lowCost) {
         globalProxies.push("低倍率节点");     // 懒得再搞一个低倍率节点组了
     }
-    
-    // 修改默认代理组
+
+    // 修改默认代理组 - 降低阈值为大于0个节点就创建地区组
     const targetCountryList = [];
     for (const { country, count } of countryInfo) {
-        if (count > 2) {
-            // 仅为节点数大于 2 的地区创建节点组
+        if (count > 0) {  // 修改：只要有节点就创建节点组
             const groupName = `${country}节点`;
             globalProxies.push(groupName);
             countryProxies.push(groupName);

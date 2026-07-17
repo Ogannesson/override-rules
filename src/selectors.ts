@@ -7,6 +7,7 @@ import type { BaseLists, BuildBaseListsInput } from "./types";
  * @param input - 构建基础列表所需的输入参数
  * @param input.landing - 是否存在落地节点
  * @param input.lowCostNodes - 低价节点名称列表
+ * @param input.warpNodes - WARP 出口节点列表
  * @param input.countryNames - 纯地区名数组（不含后缀）
  * @param input.nonLandingNodes - 非落地节点名称列表（仅在非正则过滤模式下使用）
  * @param input.regexFilter - 是否使用正则过滤模式
@@ -15,12 +16,14 @@ import type { BaseLists, BuildBaseListsInput } from "./types";
 export function buildBaseLists({
     landing,
     lowCostNodes,
+    warpNodes,
     countryNames,
     nonLandingNodes,
     regexFilter,
 }: BuildBaseListsInput): BaseLists {
     const suffixedCountryNames = countryNames.map((c) => c + NODE_SUFFIX);
     const lowCost = lowCostNodes.length > 0 || regexFilter;
+    const warp = warpNodes.length > 0 || regexFilter;
 
     const defaultSelector = buildList(
         PROXY_GROUPS.AUTO,
@@ -28,6 +31,7 @@ export function buildBaseLists({
         landing && PROXY_GROUPS.LANDING,
         suffixedCountryNames,
         lowCost && PROXY_GROUPS.LOW_COST,
+        warp && PROXY_GROUPS.WARP,
         PROXY_GROUPS.MANUAL,
         "DIRECT"
     );
@@ -37,6 +41,7 @@ export function buildBaseLists({
         landing && PROXY_GROUPS.LANDING,
         suffixedCountryNames,
         lowCost && PROXY_GROUPS.LOW_COST,
+        warp && PROXY_GROUPS.WARP,
         PROXY_GROUPS.MANUAL,
         "DIRECT"
     );
@@ -46,6 +51,7 @@ export function buildBaseLists({
         landing && PROXY_GROUPS.LANDING,
         suffixedCountryNames,
         lowCost && PROXY_GROUPS.LOW_COST,
+        warp && PROXY_GROUPS.WARP,
         PROXY_GROUPS.SELECT,
         PROXY_GROUPS.MANUAL
     );

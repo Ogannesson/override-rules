@@ -1,4 +1,4 @@
-import { LOW_COST_NODE_MATCHER, countriesMeta } from "./constants";
+import { LOW_COST_NODE_MATCHER, WARP_NODE_MATCHER, countriesMeta } from "./constants";
 import type { ProxyNode } from "./types";
 
 const COUNTRY_REGEX_MAP = Object.fromEntries(
@@ -20,6 +20,16 @@ const COUNTRY_EXCLUDE_MAP = Object.fromEntries(
  */
 export function parseLowCost(nodes: ProxyNode[]): ProxyNode[] {
     return (nodes || []).filter((proxy) => LOW_COST_NODE_MATCHER.regex.test(proxy.name || ""));
+}
+
+/**
+ * 从节点列表中筛选出所有 Cloudflare WARP 出口节点。
+ * 因其出口地区可切换，不宜归入固定地区组，需单独成组。
+ * @param nodes - 节点数组，当链式代理激活时为 nonLandingNodes，否则为全部节点
+ * @returns 匹配 WARP 节点正则（名称含 warp/cloudflare）的节点数组
+ */
+export function parseWarp(nodes: ProxyNode[]): ProxyNode[] {
+    return (nodes || []).filter((proxy) => WARP_NODE_MATCHER.regex.test(proxy.name || ""));
 }
 
 /**

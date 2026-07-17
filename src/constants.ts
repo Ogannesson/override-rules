@@ -9,6 +9,8 @@ export const LOW_COST_NODE_MATCHER = createCaseInsensitiveNodeMatcher(
     String.raw`0\.[0-5]|低倍率|省流|实验性`
 );
 
+export const WARP_NODE_MATCHER = createCaseInsensitiveNodeMatcher(String.raw`warp|cloudflare`);
+
 export const PROXY_GROUPS = {
     SELECT: "选择代理",
     MANUAL: "手动选择",
@@ -16,6 +18,7 @@ export const PROXY_GROUPS = {
     FALLBACK: "故障转移",
     LANDING: "落地节点",
     LOW_COST: "低倍率节点",
+    WARP: "WARP节点",
     FRONT_PROXY: "前置代理",
     STATIC_RESOURCES: "静态资源",
     AI_SERVICE: "AI服务",

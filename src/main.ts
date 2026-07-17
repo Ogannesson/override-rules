@@ -15,6 +15,8 @@ https://github.com/powerfullz/override-rules
 - threshold: 地区节点数量小于该值时不显示分组 (默认 0)
 - regex: 使用正则过滤模式（include-all + filter）写入各地区代理组，而非直接枚举节点名称（默认 false）
 
+WARP 出口分组：自动识别名称含 warp/cloudflare 的节点并单独成组（挂到各服务分组候选），无需传参。
+
 源码已迁移至 `src/*.ts`。
 */
 
@@ -26,6 +28,7 @@ import {
     parseCountries,
     parseLowCost,
     parseNodesByLanding,
+    parseWarp,
 } from "./node_parser";
 import { buildRules } from "./rules";
 import { ruleProviders } from "./rule_providers";
@@ -71,8 +74,13 @@ function main(config: ClashConfig): ClashConfig {
     }
     const { landingNodes, nonLandingNodes } = parseNodesByLanding(config.proxies);
     const landing = landingNodes.length > 0 && nonLandingNodes.length > 0;
-    const countryNodes = parseCountries(landing ? nonLandingNodes : config.proxies);
-    const lowCostNodes = parseLowCost(landing ? nonLandingNodes : config.proxies);
+    const candidateNodes = landing ? nonLandingNodes : config.proxies;
+    const warpNodes = parseWarp(candidateNodes);
+    // WARP 节点出口地区可变，不参与地区分类与低倍率分组，先从候选集中剔除
+    const warpNodeSet = new Set(warpNodes);
+    const classifiableNodes = candidateNodes.filter((node) => !warpNodeSet.has(node));
+    const countryNodes = parseCountries(classifiableNodes);
+    const lowCostNodes = parseLowCost(classifiableNodes);
     const countryNames = getActiveCountryNames(countryNodes, countryThreshold);
 
     const {
@@ -84,6 +92,7 @@ function main(config: ClashConfig): ClashConfig {
     } = buildBaseLists({
         landing,
         lowCostNodes,
+        warpNodes,
         countryNames,
         nonLandingNodes,
         regexFilter,
@@ -95,6 +104,7 @@ function main(config: ClashConfig): ClashConfig {
         countryNames,
         countryNodes,
         lowCostNodes,
+        warpNodes,
         landing,
         landingNodes,
         defaultProxies,

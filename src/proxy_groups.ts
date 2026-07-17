@@ -2,6 +2,7 @@ import {
     CDN_URL,
     SPEEDTEST_URL,
     LOW_COST_NODE_MATCHER,
+    WARP_NODE_MATCHER,
     NODE_SUFFIX,
     PROXY_GROUPS,
     countriesMeta,
@@ -65,6 +66,7 @@ export function buildProxyGroups({
     countryNames,
     countryNodes,
     lowCostNodes,
+    warpNodes,
     landing,
     landingNodes,
     defaultProxies,
@@ -76,6 +78,8 @@ export function buildProxyGroups({
     const hasTW = countryNames.includes("台湾");
     const hasHK = countryNames.includes("香港");
     const hasUS = countryNames.includes("美国");
+    // 仅交给 mihomo 的 Go 正则引擎，不会在 JS 侧编译；用于将 WARP 节点排除出各地区组与低倍率组
+    const WARP_EXCLUDE = `(?i:${WARP_NODE_MATCHER.source})`;
     const groups: Array<ProxyGroup | null> = [
         {
             name: PROXY_GROUPS.SELECT,
@@ -285,8 +289,23 @@ export function buildProxyGroups({
                   groupType,
                   nodeSource: !regexFilter
                       ? { proxies: lowCostNodes.map((node) => node.name).filter(isNotNull) }
-                      : { "include-all": true as const, filter: LOW_COST_NODE_MATCHER.pattern },
+                      : {
+                            "include-all": true as const,
+                            filter: LOW_COST_NODE_MATCHER.pattern,
+                            "exclude-filter": WARP_EXCLUDE,
+                        },
               })
+            : null,
+        warpNodes.length > 0 || regexFilter
+            ? {
+                  name: PROXY_GROUPS.WARP,
+                  icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/Cloudflare.png`,
+                  // WARP 出口通常是单节点，url-test/load-balance 无意义，固定为 select
+                  type: "select" as const,
+                  ...(!regexFilter
+                      ? { proxies: warpNodes.map((node) => node.name).filter(isNotNull) }
+                      : { "include-all": true as const, filter: WARP_NODE_MATCHER.pattern }),
+              }
             : null,
         ...countryNames.map((country) => {
             const meta = countriesMeta[country];
@@ -295,7 +314,9 @@ export function buildProxyGroups({
                 ? {
                       "include-all": true as const,
                       filter: meta.pattern,
-                      ...(meta.excludePattern ? { "exclude-filter": meta.excludePattern } : {}),
+                      "exclude-filter": meta.excludePattern
+                          ? `${meta.excludePattern}|${WARP_EXCLUDE}`
+                          : WARP_EXCLUDE,
                   }
                 : { proxies: countryNodes[country]?.map((n) => n.name).filter(isNotNull) };
             return buildGroupByType({

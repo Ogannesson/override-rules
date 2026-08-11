@@ -112,8 +112,20 @@ export function buildProxyGroups({
         {
             name: PROXY_GROUPS.STATIC_RESOURCES,
             icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/Cloudflare.png`,
+            "include-all": true,
             type: "select",
             proxies: defaultProxies,
+        },
+        {
+            name: PROXY_GROUPS.GAME_DOWNLOAD,
+            icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/Game.png`,
+            "include-all": true,
+            type: "select",
+            proxies: [
+                "DIRECT",
+                PROXY_GROUPS.STATIC_RESOURCES,
+                ...defaultProxies.filter((proxy) => proxy !== "DIRECT"),
+            ],
         },
         {
             name: PROXY_GROUPS.AI_SERVICE,

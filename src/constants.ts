@@ -21,6 +21,7 @@ export const PROXY_GROUPS = {
     WARP: "WARP节点",
     FRONT_PROXY: "前置代理",
     STATIC_RESOURCES: "静态资源",
+    GAME_DOWNLOAD: "游戏下载",
     AI_SERVICE: "AI服务",
     CRYPTO: "加密货币",
     APPLE: "苹果服务",

@@ -61,12 +61,14 @@ function buildGroupByType({
  * @returns 代理组配置数组
  */
 export function buildProxyGroups({
+    allNodes,
     regexFilter,
     groupType,
     countryNames,
     countryNodes,
     lowCostNodes,
     warpNodes,
+    tailscaleNodes,
     landing,
     landingNodes,
     defaultProxies,
@@ -78,6 +80,7 @@ export function buildProxyGroups({
     const hasTW = countryNames.includes("台湾");
     const hasHK = countryNames.includes("香港");
     const hasUS = countryNames.includes("美国");
+    const hasTailscale = tailscaleNodes.length > 0;
     // 仅交给 mihomo 的 Go 正则引擎，不会在 JS 侧编译；用于将 WARP 节点排除出各地区组与低倍率组
     const WARP_EXCLUDE = `(?i:${WARP_NODE_MATCHER.source})`;
     const groups: Array<ProxyGroup | null> = [
@@ -90,8 +93,8 @@ export function buildProxyGroups({
         {
             name: PROXY_GROUPS.MANUAL,
             icon: `${CDN_URL}/gh/shindgewongxj/WHATSINStash@master/icon/select.png`,
-            "include-all": true,
             type: "select",
+            proxies: allNodes,
         },
         landing
             ? {
@@ -138,6 +141,12 @@ export function buildProxyGroups({
             icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/Cryptocurrency_1.png`,
             type: "select",
             proxies: defaultProxies,
+        },
+        {
+            name: PROXY_GROUPS.FINANCE,
+            icon: `${CDN_URL}/gh/powerfullz/override-rules@master/icons/Nasdaq.png`,
+            type: "select",
+            proxies: defaultProxiesDirect,
         },
         {
             name: PROXY_GROUPS.APPLE,
@@ -258,12 +267,14 @@ export function buildProxyGroups({
             type: "select",
             proxies: ["DIRECT", "REJECT"],
         },
-        {
-            name: PROXY_GROUPS.SSH,
-            icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/Server.png`,
-            type: "select",
-            proxies: defaultProxies,
-        },
+        hasTailscale
+            ? {
+                  name: PROXY_GROUPS.TAILSCALE,
+                  icon: `${CDN_URL}/gh/powerfullz/override-rules@master/icons/Tailscale.png`,
+                  type: "select",
+                  proxies: tailscaleNodes.map((node) => node.name).filter(isNotNull),
+              }
+            : null,
         {
             name: PROXY_GROUPS.AD_BLOCK,
             icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/AdBlack.png`,

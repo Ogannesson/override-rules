@@ -73,10 +73,7 @@ export interface FallbackProxyGroup extends BaseProxyGroup {
 }
 
 export type ProxyGroup =
-    | SelectProxyGroup
-    | UrlTestProxyGroup
-    | LoadBalanceProxyGroup
-    | FallbackProxyGroup;
+    SelectProxyGroup | UrlTestProxyGroup | LoadBalanceProxyGroup | FallbackProxyGroup;
 
 export interface SnifferProtocolConfig {
     ports: number[];
@@ -108,12 +105,28 @@ export interface DnsConfig {
     ipv6: boolean;
     "prefer-h3": boolean;
     "enhanced-mode": "redir-host" | "fake-ip";
-    "default-nameserver": string[];
+    listen?: string;
+    "cache-algorithm"?: "lru" | "arc";
+    "use-hosts"?: boolean;
+    "use-system-hosts"?: boolean;
+    "respect-rules"?: boolean;
+    "fake-ip-range"?: string;
+    "fake-ip-range6"?: string;
+    "fake-ip-filter-mode"?: "blacklist" | "whitelist" | "rule";
+    "default-nameserver"?: string[];
     nameserver: string[];
     fallback: string[];
-    "proxy-server-nameserver": string[];
+    "proxy-server-nameserver"?: string[];
+    "direct-nameserver"?: string[];
+    "nameserver-policy"?: Record<string, DnsPolicyValue>;
+    "proxy-server-nameserver-policy"?: Record<string, DnsPolicyValue>;
+    "direct-nameserver-follow-policy"?: boolean;
+    "fallback-filter"?: Record<string, unknown>;
     "fake-ip-filter"?: string[];
 }
+
+/** Mihomo DNS Policy 支持的值类型。 */
+export type DnsPolicyValue = string | string[];
 
 export type RuleProviderType = "http" | "file";
 export type RuleProviderBehavior = "domain" | "classical" | "ipcidr";
@@ -142,6 +155,8 @@ export interface ClashProfile {
 
 export interface ClashConfig {
     proxies?: ProxyNode[];
+    /** Mihomo 根级 hosts 映射。 */
+    hosts?: Record<string, string | string[]>;
     "proxy-groups"?: ProxyGroup[];
     rules?: string[];
     "rule-providers"?: Record<string, RuleProvider>;
@@ -199,6 +214,7 @@ export interface BuildBaseListsInput {
 }
 
 export interface BuildProxyGroupsInput {
+    allNodes: string[];
     regexFilter: boolean;
     groupType: GroupType;
     countryNames: string[];
@@ -207,6 +223,7 @@ export interface BuildProxyGroupsInput {
     warpNodes: ProxyNode[];
     landing: boolean;
     landingNodes: ProxyNode[];
+    tailscaleNodes: ProxyNode[];
     defaultProxies: string[];
     defaultProxiesDirect: string[];
     defaultSelector: string[];

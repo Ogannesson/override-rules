@@ -1,5 +1,122 @@
 # Changelog
 
+## [2.7.6](https://github.com/powerfullz/override-rules/compare/src-v2.7.5...src-v2.7.6) (2026-09-16)
+
+
+### Bug Fixes
+
+- 升级 brace-expansion 至 5.0.12 修复高危 DoS 告警 ([ba5d324](https://github.com/powerfullz/override-rules/commit/ba5d32433da3746ec75d6fbe404c123efc251242))
+## [2.7.5](https://github.com/powerfullz/override-rules/compare/src-v2.7.4...src-v2.7.5) (2026-09-16)
+
+
+### Build
+
+- 恢复 TypeScript 7 类型检查工具链与 TS lint 覆盖 ([5d12e06](https://github.com/powerfullz/override-rules/commit/5d12e064988de66329db4fd232ebc1309825ca79))
+
+
+### CI
+
+- 修复 release/preview 调用已删除的 typecheck 脚本 ([2db0c1c](https://github.com/powerfullz/override-rules/commit/2db0c1cf8c898aff3ff13ac00c68cf419c4be5ba))
+
+
+### Documentation
+
+- 说明双 TypeScript 版本设计与 typecheck 工作流 ([17816dc](https://github.com/powerfullz/override-rules/commit/17816dc2313b3a576cb58712bee2a37fb6d959bd))
+
+
+### Features
+
+- 添加金融服务代理组 ([fa263d8](https://github.com/powerfullz/override-rules/commit/fa263d89a73a03f5b96ba1e19bf4c1e441b79550))
+
+
+### Other
+
+- Agent Host changes for agents/update-architecture-doc (#69) ([9964641](https://github.com/powerfullz/override-rules/commit/996464115236585d946455d95153197ebc478455))
+- Update package-lock.json and package.json for TypeScript 7 migration ([bada7d2](https://github.com/powerfullz/override-rules/commit/bada7d2955b9ad14e30556f60a82d684bd759041))
+- Refactor CI workflow and update documentation for TypeScript 7 migration
+
+- Adjust CI configuration in ci.yaml
+- Update HOW_TO_CUSTOMISE.md for clarity
+- Refine eslint.config.mjs to improve linting rules
+- Optimize package-lock.json and package.json for dependencies ([9abb81a](https://github.com/powerfullz/override-rules/commit/9abb81a06d884a3566b5382674584959b5c8a249))
+- Agent Host changes for agents/typescript-7-migration-and-dependencies ([d0eadd9](https://github.com/powerfullz/override-rules/commit/d0eadd9dedeabfe992f13ae9b5353436afbfee6a))
+## [2.7.4](https://github.com/powerfullz/override-rules/compare/src-v2.7.3...src-v2.7.4) (2026-09-09)
+
+
+### Other
+
+- Quic 参数的逻辑写反了
+Fixes #66 ([c149a40](https://github.com/powerfullz/override-rules/commit/c149a400b33b4fe14cef9764bea1f53ff167a4e7))
+## [2.7.3](https://github.com/powerfullz/override-rules/compare/src-v2.7.2...src-v2.7.3) (2026-09-08)
+
+
+### Bug Fixes
+
+- 删除多余的proxy-server-nameserver ([9c29203](https://github.com/powerfullz/override-rules/commit/9c292033ed82ace9b209253ca8b51a1005ec94f1))
+- 仅合并必要的字段 ([85ede6f](https://github.com/powerfullz/override-rules/commit/85ede6fe10c2f1659d0852e0e07a22d4c53249b7))
+
+
+### Chores
+
+- Update dependencies ([2ec6f64](https://github.com/powerfullz/override-rules/commit/2ec6f645198e824885ab2aee4b94eafc8d4d19d1))
+
+
+### Other
+
+- Update readme ([b503979](https://github.com/powerfullz/override-rules/commit/b5039799646aedbcb53fac1323c8f852da536b93))
+## [2.7.2](https://github.com/powerfullz/override-rules/compare/src-v2.7.1...src-v2.7.2) (2026-08-21)
+
+
+### Bug Fixes
+
+- 继承原配置的`hosts`字段 ([ae276fc](https://github.com/powerfullz/override-rules/commit/ae276fcf3825c9b437360a1738bac1fdd80fb69f))
+## [2.7.1](https://github.com/powerfullz/override-rules/compare/src-v2.7.0...src-v2.7.1) (2026-08-21)
+
+
+### Bug Fixes
+
+- Remove unused `PROXY_GROUPS.SSH` constant ([b48d845](https://github.com/powerfullz/override-rules/commit/b48d84510b5325062aab7cab433a9c8d4d7d4105))
+- Merge upstream DNS configuration ([5764bf4](https://github.com/powerfullz/override-rules/commit/5764bf4541b8a1de1a2b29c6ce61781b082e6ebb))
+
+
+### Documentation
+
+- 补充 JSDocs ([a2e5d8f](https://github.com/powerfullz/override-rules/commit/a2e5d8faec297ae1a47967b6d20f74fd78efb1f8))
+## [2.7.0](https://github.com/powerfullz/override-rules/compare/src-v2.6.0...src-v2.7.0) (2026-08-20)
+
+
+### Bug Fixes
+
+- Remove redundant `default-nameserver` ([7868631](https://github.com/powerfullz/override-rules/commit/786863149092cfe040a279c1bbf201a2ceb59dfd))
+- 修正`fake-ip-filter`内容 ([0f806c8](https://github.com/powerfullz/override-rules/commit/0f806c884a1b720de648baa3f4e12bb2690e4dcf))
+
+
+### Features
+
+- Remove SSH proxy group ([582f322](https://github.com/powerfullz/override-rules/commit/582f3229ad32a0b0016a98435a344642b2753f10))
+## [2.6.0](https://github.com/powerfullz/override-rules/compare/src-v2.5.6...src-v2.6.0) (2026-08-20)
+
+
+### Documentation
+
+- 新增关于 Tailscale 的说明 ([ce94656](https://github.com/powerfullz/override-rules/commit/ce94656631a8a322c032c6e333949829f3682f06))
+
+
+### Features
+
+- 完善 Tailscale 功能 ([7971888](https://github.com/powerfullz/override-rules/commit/797188846865de703d5f9b2990a55afa92a08389))
+- 增加 tailscale 分流雏形 ([a77954b](https://github.com/powerfullz/override-rules/commit/a77954b54d505ebafbeb4291134aa2fea9822cbb))
+
+
+### Other
+
+- 优化 tailscale 分组显示 ([a9b65f3](https://github.com/powerfullz/override-rules/commit/a9b65f37146d92dd8a8612378ee991c7e96b96dd))
+## [2.5.6](https://github.com/powerfullz/override-rules/compare/src-v2.5.5...src-v2.5.6) (2026-08-14)
+
+
+### Features
+
+- 为手动选择代理组完整书写节点名称 ([de96f23](https://github.com/powerfullz/override-rules/commit/de96f230d688fdaa5106e9a7ac5372e061de57c8))
 ## [2.5.5](https://github.com/powerfullz/override-rules/compare/src-v2.5.4...src-v2.5.5) (2026-06-30)
 
 

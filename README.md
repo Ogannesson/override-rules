@@ -25,11 +25,11 @@
 
 目前我的主力机场，也是一家老牌一线机场了，线路扎实，冗余足够，实验性节点0.2倍率，部分地区的高级节点是家宽落地，用起来还是很舒服的。
 
-#### 星岛梦
+#### CNIX
 
-[注册链接](https://luics.xdmvipaff.cc/#/?code=MMB4xSlc)
+[注册链接](https://nozomi.wtf/auth/register?code=2d50f605de)
 
-星岛梦是一家 2025 年 12 月刚开业的机场，机场主在测试的时候就来找我了，我因此有幸从早期测试阶段便开始关注，见证了机场主熬夜修线路换落地的过程，目前体验还不错。算上日常折扣性价比还可以，大家可以月付体验一下。
+开了很多年的一家机场，目前有各种针对不同运营商的优化线路。可玩性还是很高的，缺点就是审计规则比较多，而且禁止测速。
 
 ### 使用方法
 
@@ -112,6 +112,20 @@ https://raw.githubusercontent.com/powerfullz/override-rules/refs/heads/preview/c
 对于使用机场线路配合自行购买的落地机进行链式代理的情况，在 Substore 添加自建节点时，加入`dialer-proxy: "前置代理"`脚本即可自动识别，并新增「前置代理」和「落地节点」两个代理组。
 
 ![新增的代理组](img/dialer-group.png) ![如何配置自建节点](img/dialer-example.png)
+
+### 关于 Tailscale 的说明
+
+Mihomo 内核在近期的更新中支持了 Tailscale 出站，这覆写规则也做出了更新，当检测到订阅中存在`tailscale`类型的节点时，会自动配置相关的代理组、Tun 配置和分流规则，开箱即用，支持 Magic DNS，以下是 Tailscale 节点配置的示例：
+
+```yaml
+proxies:
+  - name: "Tailscale出口"   # 注意节点名称不能为 Tailscale，否则会和代理组重名造成启动出错
+    type: tailscale
+    auth-key: tskey-auth-xxxxxxxx
+    control-url: https://controlplane.tailscale.com
+    ephemeral: true
+    udp: true
+```
 
 ### 关于自动生成的 YAML 格式覆写
 

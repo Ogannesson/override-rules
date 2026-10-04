@@ -44,6 +44,7 @@ export const PROXY_GROUPS = {
     TWITCH: "Twitch",
     WEIBO: "新浪微博",
     PIKPAK: "PikPak网盘",
+    SSH: "SSH",
     SOGOU_INPUT: "搜狗输入法",
     AD_BLOCK: "广告拦截",
     GLOBAL: "GLOBAL",

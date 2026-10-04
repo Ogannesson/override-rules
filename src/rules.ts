@@ -14,12 +14,14 @@ export function buildRules(
     tailscale: boolean
 ): string[] {
     return [
-        // AI 服务置顶，优先于 QUIC 拦截与其它分流，避免其它规则出问题时 AI 连接受牵连
-        `GEOSITE,category-ai-!cn,${PROXY_GROUPS.AI_SERVICE}`,
         !quicEnabled ? `AND,((DST-PORT,443),(NETWORK,UDP)),REJECT` : null,
+        // AI 服务紧随 QUIC 拦截，先于其它所有分流，避免其它规则出问题时 AI 连接受牵连；
+        // AI 域名的 QUIC 仍被拒绝、退回 TCP
+        `GEOSITE,category-ai-!cn,${PROXY_GROUPS.AI_SERVICE}`,
         tailscale ? `IP-CIDR,100.64.0.0/10,${PROXY_GROUPS.TAILSCALE},no-resolve` : null,
         tailscale ? `IP-CIDR,fd7a:115c:a1e0::/48,${PROXY_GROUPS.TAILSCALE},no-resolve` : null,
         tailscale ? `DOMAIN-SUFFIX,ts.net,${PROXY_GROUPS.TAILSCALE}` : null,
+        `DST-PORT,22,${PROXY_GROUPS.SSH}`,
         `GEOIP,private,DIRECT,no-resolve`,
         `RULE-SET,ADBlock,${PROXY_GROUPS.AD_BLOCK}`,
         `RULE-SET,AdditionalFilter,${PROXY_GROUPS.AD_BLOCK}`,

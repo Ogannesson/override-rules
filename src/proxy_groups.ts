@@ -267,6 +267,12 @@ export function buildProxyGroups({
             type: "select",
             proxies: ["DIRECT", "REJECT"],
         },
+        {
+            name: PROXY_GROUPS.SSH,
+            icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/Server.png`,
+            type: "select",
+            proxies: defaultProxies,
+        },
         hasTailscale
             ? {
                   name: PROXY_GROUPS.TAILSCALE,

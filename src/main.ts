@@ -14,6 +14,7 @@ https://github.com/powerfullz/override-rules
 - quic: 允许 QUIC 流量（UDP 443，默认 false）
 - threshold: 地区节点数量小于该值时不显示分组 (默认 0)
 - regex: 使用正则过滤模式（include-all + filter）写入各地区代理组，而非直接枚举节点名称（默认 false）
+- asn: 为 AI服务 追加 Anthropic 全部 ASN 的 IP-ASN 规则（默认 false；开启后需能下载 ASN 数据库，否则整份配置加载失败）
 
 WARP 出口分组：自动识别名称含 warp/cloudflare 的节点并单独成组（挂到各服务分组候选），无需传参。
 
@@ -66,6 +67,7 @@ const {
     quicEnabled,
     regexFilter,
     tunEnabled,
+    asnEnabled,
     countryThreshold,
 } = buildFeatureFlags(rawArgs);
 
@@ -129,7 +131,7 @@ function main(config: ClashConfig): ClashConfig {
         proxies: globalProxies,
     });
 
-    const finalRules = buildRules({ quicEnabled }, hasTailscale);
+    const finalRules = buildRules({ quicEnabled, asnEnabled }, hasTailscale);
 
     return {
         proxies: config.proxies,

@@ -65,6 +65,7 @@
 *   `regex`：各国家/地区代理组改用 `include-all` + 正则过滤模式，由 Mihomo 内核在运行时按正则动态筛选节点，而非在脚本执行时枚举节点名称（默认 false）[^regex]
 *   `tun`：启用 TUN 模式（gvisor 栈，自动配置路由排除地址与 DNS 劫持，默认 false）
 *   `threshold`：国家/地区节点数量小于该值时不显示分组（默认 2）
+*   `asn`：在「AI服务」的 IP 兜底规则之后追加 `IP-ASN` 规则，覆盖 Anthropic, PBC 在 ARIN 名下的全部 5 个 ASN（399358、60808、4167、400243、401551）（默认 false）。开启后客户端必须能下载 ASN 数据库（`GeoLite2-ASN.mmdb`），下载不到时整份配置加载失败。预生成的 YAML 不包含此参数。
 
 > **向后兼容**：旧的 `loadbalance` 参数仍然可用。当 `grouptype` 未指定时，`loadbalance=true` 等价于 `grouptype=2`，`loadbalance=false` 等价于 `grouptype=1`。
 
@@ -95,7 +96,7 @@ https://raw.githubusercontent.com/powerfullz/override-rules/refs/heads/preview/c
 
 ### 关于部分特殊代理组的说明
 
-**AI服务**：其分流规则（`GEOSITE,category-ai-!cn`）紧跟在 QUIC 拦截规则之后（`quic=true` 时即为第一条），先于其它所有分流规则匹配，避免其它规则或代理组出问题时 AI 服务（包括各类 AI Agent）随之失联。AI 域名的 QUIC 流量和其它域名一样被拒绝并退回 TCP。
+**AI服务**：其分流规则（`GEOSITE,category-ai-!cn`）紧跟在 QUIC 拦截规则之后（`quic=true` 时即为第一条），先于其它所有分流规则匹配，避免其它规则或代理组出问题时 AI 服务（包括各类 AI Agent）随之失联。AI 域名的 QUIC 流量和其它域名一样被拒绝并退回 TCP。geosite 规则之后还补充了几条 geosite 未收录的规则：`claude.app`（Claude Desktop 官方放行清单中的域名）、`aiplatform.googleapis.com` 及其区域端点 `<区域>-aiplatform.googleapis.com`（Gemini CLI 使用的 Vertex AI 接口）、`hcaptcha.com`、`challenges.cloudflare.com`、`arkoselabs.com`（Claude 与 ChatGPT 登录风控使用的人机验证，需与 AI 服务同一出口），以及 ARIN 直接分配给 Anthropic 的地址块 `160.79.104.0/21`、`153.61.0.0/16`、`2607:6bc0::/32`（兜底没有域名的连接）。ChatGPT 付款用的 `js.stripe.com` 不在此列，仍走「金融服务」。
 
 **静态资源**：包含所有常见静态资源 CDN 域名、对象存储域名。大部分网站的静态资源（如图片、视频、音频、字体、JS、CSS）都有独立域名、不设置风控措施、不设置鉴权，这些静态资源可以使用 IP 不一定干净（例如 IDC 类 IP）、但是带宽更大、延时更低、而且有和大部分主流 CDN（如 Cloudflare、Akamai、Fastly、EdgeCast）在 IXP 有互联的网络出口。一般就实践经验来看，在正常上网中这部分域名产生的流量占据约 70% 左右。如果你在使用商业性质的远端策略服务提供商、且该服务上提供了低倍率节点，你可以将这部分域名分流至低倍率节点以节省流量。该策略组也会直接列出订阅中的所有节点，方便单独指定大流量节点。[^fn1]
 

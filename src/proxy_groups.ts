@@ -146,7 +146,7 @@ export function buildProxyGroups({
             name: PROXY_GROUPS.FINANCE,
             icon: `${CDN_URL}/gh/powerfullz/override-rules@master/icons/Nasdaq.png`,
             type: "select",
-            proxies: defaultProxiesDirect,
+            proxies: defaultProxies,
         },
         {
             name: PROXY_GROUPS.APPLE,

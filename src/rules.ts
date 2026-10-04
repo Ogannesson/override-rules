@@ -14,6 +14,8 @@ export function buildRules(
     tailscale: boolean
 ): string[] {
     return [
+        // AI 服务置顶，优先于 QUIC 拦截与其它分流，避免其它规则出问题时 AI 连接受牵连
+        `GEOSITE,category-ai-!cn,${PROXY_GROUPS.AI_SERVICE}`,
         !quicEnabled ? `AND,((DST-PORT,443),(NETWORK,UDP)),REJECT` : null,
         tailscale ? `IP-CIDR,100.64.0.0/10,${PROXY_GROUPS.TAILSCALE},no-resolve` : null,
         tailscale ? `IP-CIDR,fd7a:115c:a1e0::/48,${PROXY_GROUPS.TAILSCALE},no-resolve` : null,
@@ -23,7 +25,6 @@ export function buildRules(
         `RULE-SET,AdditionalFilter,${PROXY_GROUPS.AD_BLOCK}`,
         `RULE-SET,SogouInput,${PROXY_GROUPS.SOGOU_INPUT}`,
         `DOMAIN-SUFFIX,truthsocial.com,${PROXY_GROUPS.TRUTH_SOCIAL}`,
-        `GEOSITE,category-ai-!cn,${PROXY_GROUPS.AI_SERVICE}`,
         `RULE-SET,SteamFix,DIRECT`,
         `GEOSITE,category-game-platforms-download,${PROXY_GROUPS.GAME_DOWNLOAD}`,
         `RULE-SET,StaticResources,${PROXY_GROUPS.STATIC_RESOURCES}`,

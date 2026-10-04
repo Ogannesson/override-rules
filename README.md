@@ -104,6 +104,10 @@ https://raw.githubusercontent.com/powerfullz/override-rules/refs/heads/preview/c
 
 **搜狗输入**：默认放行，作用是避免搜狗输入法将你输入的每一个字符自动收集并通过`get.sogou.com/q`等域名回传。隐私担忧者可以将其设置为`REJECT`，开启后会影响搜狗输入法账号同步、词库更新、问题反馈，但语音输入等其他功能可以正常使用。
 
+**WARP节点 / Global家宽**：名称含 `warp` 或 `cloudflare`（不区分大小写）的节点归入「WARP节点」，名称以 `🌐` 开头的节点归入「Global家宽」（同时命中两者时归 WARP）。这两类节点的出口地区可以切换，不固定在某个国家，因此不进入任何国家/地区分组和低倍率分组，而是单独成组（固定为 `select`），并出现在各服务分组的候选列表中。
+
+**国家/地区归类**：节点名称以国旗 emoji 开头时，按国旗确定地区（国旗表示实际出口，例如 `🇵🇭HKG->DITO` 归菲律宾、`🇨🇦Po0->US->Bell` 归加拿大，名称中的入口或中转关键字不参与判定）；国旗不属于已支持的地区时，该节点不进入任何地区分组（仍可在「手动选择」等分组中选用）；没有国旗时，仍按正则关键字匹配。按国旗归类只在默认的枚举模式下生效，`regex=true` 和预生成的 YAML 覆写由 Mihomo 内核按正则筛选，同一节点可能同时进入多个地区分组。
+
 **游戏下载**：覆盖 Steam、Epic Games、Battle.net、EA、Ubisoft、Xbox/Microsoft Store、PlayStation、GOG、Rockstar、Riot、Bethesda 等平台的客户端更新和游戏下载域名。默认使用 `DIRECT`，也可以切换到「静态资源」、其他策略组或订阅中的任意节点。
 
 ~~**Play 商店修复**：~~ 修复国行设备因使用`services.googleapis.cn`域名导致的 Google Play 下载应用时的「等待中…」问题。详见：[「Google Play 商店的国内 CDN：从密码学入门到分流策略优化」](https://blog.l3zc.com/2025/03/chinese-cdn-used-by-playstore/)，已经是默认行为。

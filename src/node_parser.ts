@@ -1,5 +1,21 @@
-import { LOW_COST_NODE_MATCHER, WARP_NODE_MATCHER, countriesMeta } from "./constants";
+import {
+    GLOBAL_RESIDENTIAL_NODE_MATCHER,
+    LOW_COST_NODE_MATCHER,
+    WARP_NODE_MATCHER,
+    countriesMeta,
+} from "./constants";
 import type { ProxyNode } from "./types";
+
+/** 国旗 emoji 由两个区域指示符组成 */
+const FLAG_REGEX = /[\u{1F1E6}-\u{1F1FF}]{2}/gu;
+const LEADING_FLAG_REGEX = /^[\u{1F1E6}-\u{1F1FF}]{2}/u;
+
+/** 国旗 emoji → 地区名，从各地区 pattern 中出现的国旗提取 */
+const FLAG_COUNTRY_MAP = Object.fromEntries(
+    Object.entries(countriesMeta).flatMap(([country, meta]) =>
+        (meta.pattern.match(FLAG_REGEX) ?? []).map((flag) => [flag, country])
+    )
+) as Record<string, string>;
 
 const COUNTRY_REGEX_MAP = Object.fromEntries(
     Object.entries(countriesMeta).map(([country, meta]) => {
@@ -42,6 +58,21 @@ export function parseWarp(nodes: ProxyNode[]): ProxyNode[] {
 }
 
 /**
+ * 从节点列表中筛选出所有 Global 家宽节点（名称以 🌐 开头）。
+ * 与 WARP 节点一样出口地区可切换，需单独成组；同时命中 WARP 的节点归 WARP。
+ * @param nodes - 节点数组，当链式代理激活时为 nonLandingNodes，否则为全部节点
+ * @returns 名称以 🌐 开头且不属于 WARP 的节点数组
+ */
+export function parseGlobalResidential(nodes: ProxyNode[]): ProxyNode[] {
+    return (nodes || []).filter((proxy) => {
+        const name = proxy.name || "";
+        return (
+            GLOBAL_RESIDENTIAL_NODE_MATCHER.regex.test(name) && !WARP_NODE_MATCHER.regex.test(name)
+        );
+    });
+}
+
+/**
  * 根据 dialer-proxy 字段将节点分为落地节点和非落地节点。
  * 在 Mihomo 链式代理中，`dialer-proxy` 表示当前节点通过指定代理拨号。
  * 因此带 `dialer-proxy: "前置代理"` 的节点是落地节点（目标节点），其余为非落地节点。
@@ -71,8 +102,25 @@ export function parseNodesByLanding(nodes: ProxyNode[]): {
 }
 
 /**
- * 遍历订阅中的所有节点，按 `countriesMeta` 中定义的地区进行归类。
- * 排除匹配 COUNTRY_EXCLUDE_MAP[country] 的节点。
+ * 判定节点名称所属地区：名称以国旗开头时只按国旗归类（国旗代表实际出口，名称中的
+ * 入口/中转关键字不参与判定），国旗不在 countriesMeta 中则不归入任何地区；
+ * 没有国旗时按正则顺序取首个命中，并排除匹配 COUNTRY_EXCLUDE_MAP[country] 的节点。
+ * @param name - 节点名称
+ * @returns 地区名，无法归类时返回 undefined
+ */
+function matchCountry(name: string): string | undefined {
+    const flag = name.match(LEADING_FLAG_REGEX)?.[0];
+    if (flag) return FLAG_COUNTRY_MAP[flag];
+
+    for (const [country, regex] of Object.entries(COUNTRY_REGEX_MAP)) {
+        if (!regex.test(name)) continue;
+        if (COUNTRY_EXCLUDE_MAP[country]?.test(name)) continue;
+        return country;
+    }
+}
+
+/**
+ * 遍历订阅中的所有节点，按 `countriesMeta` 中定义的地区进行归类（判定规则见 `matchCountry`）。
  * @param nodes - 节点数组，当链式代理激活时为 nonLandingNodes，否则为全部节点
  * @returns 地区名到节点数组的映射 Record
  */
@@ -80,18 +128,13 @@ export function parseCountries(nodes: ProxyNode[]): Record<string, ProxyNode[]> 
     const countryNodes: Record<string, ProxyNode[]> = Object.create(null);
 
     for (const node of nodes) {
-        const name = node.name || "";
+        const country = matchCountry(node.name || "");
+        if (!country) continue;
 
-        for (const [country, regex] of Object.entries(COUNTRY_REGEX_MAP)) {
-            if (!regex.test(name)) continue;
-            if (COUNTRY_EXCLUDE_MAP[country]?.test(name)) continue;
-
-            if (!countryNodes[country]) {
-                countryNodes[country] = [];
-            }
-            countryNodes[country].push(node);
-            break;
+        if (!countryNodes[country]) {
+            countryNodes[country] = [];
         }
+        countryNodes[country].push(node);
     }
 
     return countryNodes;

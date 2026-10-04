@@ -17,6 +17,8 @@ https://github.com/powerfullz/override-rules
 - asn: 为 AI服务 追加 Anthropic 全部 ASN 的 IP-ASN 规则（默认 false；开启后需能下载 ASN 数据库，否则整份配置加载失败）
 
 WARP 出口分组：自动识别名称含 warp/cloudflare 的节点并单独成组（挂到各服务分组候选），无需传参。
+Global家宽分组：名称以 🌐 开头的多地区家宽节点同样单独成组，不进地区分组。
+地区归类：节点名称以国旗开头时只按国旗归入对应地区，未知国旗不归入任何地区（仅枚举模式；regex 模式仍按正则匹配）。
 
 源码已迁移至 `src/*.ts`。
 */
@@ -27,6 +29,7 @@ import { buildProxyGroups } from "./proxy_groups";
 import {
     getActiveCountryNames,
     parseCountries,
+    parseGlobalResidential,
     parseLowCost,
     parseNodesByLanding,
     parseTailscale,
@@ -79,9 +82,10 @@ function main(config: ClashConfig): ClashConfig {
     const landing = landingNodes.length > 0 && nonLandingNodes.length > 0;
     const candidateNodes = landing ? nonLandingNodes : config.proxies;
     const warpNodes = parseWarp(candidateNodes);
-    // WARP 节点出口地区可变，不参与地区分类与低倍率分组，先从候选集中剔除
-    const warpNodeSet = new Set(warpNodes);
-    const classifiableNodes = candidateNodes.filter((node) => !warpNodeSet.has(node));
+    const globalResidentialNodes = parseGlobalResidential(candidateNodes);
+    // WARP 与 Global 家宽节点出口地区可变，不参与地区分类与低倍率分组，先从候选集中剔除
+    const exitFloatingNodes = new Set([...warpNodes, ...globalResidentialNodes]);
+    const classifiableNodes = candidateNodes.filter((node) => !exitFloatingNodes.has(node));
     const countryNodes = parseCountries(classifiableNodes);
     const lowCostNodes = parseLowCost(classifiableNodes);
     const countryNames = getActiveCountryNames(countryNodes, countryThreshold);
@@ -99,6 +103,7 @@ function main(config: ClashConfig): ClashConfig {
         landing,
         lowCostNodes,
         warpNodes,
+        globalResidentialNodes,
         countryNames,
         nonLandingNodes,
         regexFilter,
@@ -112,6 +117,7 @@ function main(config: ClashConfig): ClashConfig {
         countryNodes,
         lowCostNodes,
         warpNodes,
+        globalResidentialNodes,
         tailscaleNodes,
         landing,
         landingNodes,

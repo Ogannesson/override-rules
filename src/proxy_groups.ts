@@ -3,6 +3,7 @@ import {
     SPEEDTEST_URL,
     LOW_COST_NODE_MATCHER,
     WARP_NODE_MATCHER,
+    GLOBAL_RESIDENTIAL_NODE_MATCHER,
     NODE_SUFFIX,
     PROXY_GROUPS,
     countriesMeta,
@@ -68,6 +69,7 @@ export function buildProxyGroups({
     countryNodes,
     lowCostNodes,
     warpNodes,
+    globalResidentialNodes,
     tailscaleNodes,
     landing,
     landingNodes,
@@ -81,8 +83,11 @@ export function buildProxyGroups({
     const hasHK = countryNames.includes("香港");
     const hasUS = countryNames.includes("美国");
     const hasTailscale = tailscaleNodes.length > 0;
-    // 仅交给 mihomo 的 Go 正则引擎，不会在 JS 侧编译；用于将 WARP 节点排除出各地区组与低倍率组
+    // 仅交给 mihomo 的 Go 正则引擎，不会在 JS 侧编译；
+    // WARP_EXCLUDE 用于把 WARP 节点排除出 Global家宽 组，EXIT_FLOATING_EXCLUDE 用于把 WARP 与
+    // Global 家宽节点排除出各地区组与低倍率组
     const WARP_EXCLUDE = `(?i:${WARP_NODE_MATCHER.source})`;
+    const EXIT_FLOATING_EXCLUDE = `(?i:${WARP_NODE_MATCHER.source}|${GLOBAL_RESIDENTIAL_NODE_MATCHER.source})`;
     const groups: Array<ProxyGroup | null> = [
         {
             name: PROXY_GROUPS.SELECT,
@@ -321,7 +326,7 @@ export function buildProxyGroups({
                       : {
                             "include-all": true as const,
                             filter: LOW_COST_NODE_MATCHER.pattern,
-                            "exclude-filter": WARP_EXCLUDE,
+                            "exclude-filter": EXIT_FLOATING_EXCLUDE,
                         },
               })
             : null,
@@ -336,6 +341,25 @@ export function buildProxyGroups({
                       : { "include-all": true as const, filter: WARP_NODE_MATCHER.pattern }),
               }
             : null,
+        globalResidentialNodes.length > 0 || regexFilter
+            ? {
+                  name: PROXY_GROUPS.GLOBAL_RESIDENTIAL,
+                  icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/World_Map.png`,
+                  // 出口地区在节点内切换，与 WARP 一样固定为 select
+                  type: "select" as const,
+                  ...(!regexFilter
+                      ? {
+                            proxies: globalResidentialNodes
+                                .map((node) => node.name)
+                                .filter(isNotNull),
+                        }
+                      : {
+                            "include-all": true as const,
+                            filter: GLOBAL_RESIDENTIAL_NODE_MATCHER.pattern,
+                            "exclude-filter": WARP_EXCLUDE,
+                        }),
+              }
+            : null,
         ...countryNames.map((country) => {
             const meta = countriesMeta[country];
             if (!meta) return null;
@@ -344,8 +368,8 @@ export function buildProxyGroups({
                       "include-all": true as const,
                       filter: meta.pattern,
                       "exclude-filter": meta.excludePattern
-                          ? `${meta.excludePattern}|${WARP_EXCLUDE}`
-                          : WARP_EXCLUDE,
+                          ? `${meta.excludePattern}|${EXIT_FLOATING_EXCLUDE}`
+                          : EXIT_FLOATING_EXCLUDE,
                   }
                 : { proxies: countryNodes[country]?.map((n) => n.name).filter(isNotNull) };
             return buildGroupByType({

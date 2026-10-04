@@ -11,6 +11,9 @@ export const LOW_COST_NODE_MATCHER = createCaseInsensitiveNodeMatcher(
 
 export const WARP_NODE_MATCHER = createCaseInsensitiveNodeMatcher(String.raw`warp|cloudflare`);
 
+/** 名称以 🌐 开头的节点：出口地区可切换的多地区家宽 */
+export const GLOBAL_RESIDENTIAL_NODE_MATCHER = createCaseInsensitiveNodeMatcher(String.raw`^🌐`);
+
 export const PROXY_GROUPS = {
     SELECT: "选择代理",
     MANUAL: "手动选择",
@@ -19,6 +22,7 @@ export const PROXY_GROUPS = {
     LANDING: "落地节点",
     LOW_COST: "低倍率节点",
     WARP: "WARP节点",
+    GLOBAL_RESIDENTIAL: "Global家宽",
     FRONT_PROXY: "前置代理",
     STATIC_RESOURCES: "静态资源",
     GAME_DOWNLOAD: "游戏下载",
@@ -53,7 +57,8 @@ export const PROXY_GROUPS = {
 
 /**
  * 各地区的元数据：`weight` 决定在代理组列表中的排列顺序（值越小越靠前，未设置则排末尾）；
- * `pattern` 是用于匹配节点名称的正则字符串；`icon` 为策略组图标 URL。
+ * `pattern` 是用于匹配节点名称的正则字符串，其中的国旗 emoji 同时用于按节点名开头国旗归类；
+ * `icon` 为策略组图标 URL。
  */
 export const countriesMeta: Record<string, CountryMeta> = {
     香港: {
@@ -89,6 +94,7 @@ export const countriesMeta: Record<string, CountryMeta> = {
         pattern:
             "韩国|韩|韓|春川|Chuncheon|首尔|\\b(?:KR|kr)(?:[-_ ]?\\d+(?:[-_ ]?[A-Za-z]{2,})?)?\\b|Korea|KOREA|KOR|ICN|🇰🇷",
         icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/Korea.png`,
+        excludePattern: "北韩|North Korea|NORTH KOREA",
     },
     美国: {
         weight: 50,
@@ -173,5 +179,11 @@ export const countriesMeta: Record<string, CountryMeta> = {
     乌克兰: {
         pattern: "乌克兰|基辅|\\b(?:UA|ua)(?:[-_ ]?\\d+(?:[-_ ]?[A-Za-z]{2,})?)?\\b|Ukraine|KBP|🇺🇦",
         icon: `${CDN_URL}/gh/Koolson/Qure@master/IconSet/Color/Ukraine.png`,
+    },
+    朝鲜: {
+        weight: 90,
+        pattern:
+            "朝鲜|北韩|平壤|\\b(?:KP|kp)(?:[-_ ]?\\d+(?:[-_ ]?[A-Za-z]{2,})?)?\\b|North Korea|NORTH KOREA|DPRK|PRK|FNJ|🇰🇵",
+        icon: `${CDN_URL}/gh/Semporia/Hand-Painted-icon@master/Rounded_Rectangle/North_Korea.png`,
     },
 };

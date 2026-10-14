@@ -96,9 +96,11 @@ https://raw.githubusercontent.com/powerfullz/override-rules/refs/heads/preview/c
 
 ### 关于部分特殊代理组的说明
 
+**服务分组的节点列表**：AI服务、Youtube、Netflix、Telegram、静态资源、游戏下载等大部分服务分组，在「选择代理」、各地区分组、「手动选择」等原有选项之后，还会直接列出订阅中的所有节点，因此每个服务分组都可以单独指定具体节点、互不影响。「手动选择」和各地区分组则由所有服务分组共用，在其中切换节点会同时影响所有选用它们的服务分组。
+
 **AI服务**：其分流规则（`GEOSITE,category-ai-!cn`）紧跟在 QUIC 拦截规则之后（`quic=true` 时即为第一条），先于其它所有分流规则匹配，避免其它规则或代理组出问题时 AI 服务（包括各类 AI Agent）随之失联。AI 域名的 QUIC 流量和其它域名一样被拒绝并退回 TCP。geosite 规则之后还补充了几条 geosite 未收录的规则：`claude.app`（Claude Desktop 官方放行清单中的域名）、`aiplatform.googleapis.com` 及其区域端点 `<区域>-aiplatform.googleapis.com`（Gemini CLI 使用的 Vertex AI 接口）、`hcaptcha.com`、`challenges.cloudflare.com`、`arkoselabs.com`（Claude 与 ChatGPT 登录风控使用的人机验证，需与 AI 服务同一出口），以及 ARIN 直接分配给 Anthropic 的地址块 `160.79.104.0/21`、`153.61.0.0/16`、`2607:6bc0::/32`（兜底没有域名的连接）。ChatGPT 付款用的 `js.stripe.com` 不在此列，仍走「金融服务」。
 
-**静态资源**：包含所有常见静态资源 CDN 域名、对象存储域名。大部分网站的静态资源（如图片、视频、音频、字体、JS、CSS）都有独立域名、不设置风控措施、不设置鉴权，这些静态资源可以使用 IP 不一定干净（例如 IDC 类 IP）、但是带宽更大、延时更低、而且有和大部分主流 CDN（如 Cloudflare、Akamai、Fastly、EdgeCast）在 IXP 有互联的网络出口。一般就实践经验来看，在正常上网中这部分域名产生的流量占据约 70% 左右。如果你在使用商业性质的远端策略服务提供商、且该服务上提供了低倍率节点，你可以将这部分域名分流至低倍率节点以节省流量。该策略组也会直接列出订阅中的所有节点，方便单独指定大流量节点。[^fn1]
+**静态资源**：包含所有常见静态资源 CDN 域名、对象存储域名。大部分网站的静态资源（如图片、视频、音频、字体、JS、CSS）都有独立域名、不设置风控措施、不设置鉴权，这些静态资源可以使用 IP 不一定干净（例如 IDC 类 IP）、但是带宽更大、延时更低、而且有和大部分主流 CDN（如 Cloudflare、Akamai、Fastly、EdgeCast）在 IXP 有互联的网络出口。一般就实践经验来看，在正常上网中这部分域名产生的流量占据约 70% 左右。如果你在使用商业性质的远端策略服务提供商、且该服务上提供了低倍率节点，你可以将这部分域名分流至低倍率节点以节省流量。[^fn1]
 
 [^fn1]: 来源：[我有特别的 Surge 配置和使用技巧](https://blog.skk.moe/post/i-have-my-unique-surge-setup/)
 

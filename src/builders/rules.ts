@@ -82,6 +82,10 @@ export function buildRules({
         `DOMAIN-SUFFIX,truthsocial.com,${PROXY_GROUPS.TRUTH_SOCIAL}`,
         ruleSet("SteamFix", "DIRECT"),
         `GEOSITE,category-game-platforms-download,${PROXY_GROUPS.GAME_DOWNLOAD}`,
+        // 这些 Twitter 静态域名也在 StaticResources 规则集里，必须在它之前截住
+        `DOMAIN-SUFFIX,twimg.com,${PROXY_GROUPS.TWITTER_STATIC}`,
+        `DOMAIN,assets.pscp.tv,${PROXY_GROUPS.TWITTER_STATIC}`,
+        `DOMAIN,cdn.cms-twdigitalassets.com,${PROXY_GROUPS.TWITTER_STATIC}`,
         ruleSet("StaticResources", PROXY_GROUPS.STATIC_RESOURCES),
         ruleSet("CDNResources", PROXY_GROUPS.STATIC_RESOURCES),
         ruleSet("AdditionalCDNResources", PROXY_GROUPS.STATIC_RESOURCES),

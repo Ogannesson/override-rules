@@ -57,6 +57,7 @@ const SERVICE_GROUP_NAMES = [
     PROXY_GROUPS.SPOTIFY,
     PROXY_GROUPS.TELEGRAM,
     PROXY_GROUPS.TWITTER,
+    PROXY_GROUPS.TWITTER_STATIC,
     PROXY_GROUPS.WEIBO,
     PROXY_GROUPS.TRUTH_SOCIAL,
     PROXY_GROUPS.EHENTAI,
@@ -492,6 +493,29 @@ describe("assembleConfig", () => {
             PROXY_GROUPS.AI_SERVICE,
             "NodeA",
             "NodeB",
+            "DIRECT",
+        ]);
+    });
+
+    it("Twitter静态资源 组紧跟 Twitter，默认跟随静态资源", () => {
+        const result = run({}, CONFIG);
+        const names = (result["proxy-groups"] ?? []).map((item) => item.name);
+        assert.equal(
+            names.indexOf(PROXY_GROUPS.TWITTER_STATIC),
+            names.indexOf(PROXY_GROUPS.TWITTER) + 1
+        );
+
+        const twitterStatic = group(result, PROXY_GROUPS.TWITTER_STATIC);
+        assert.equal(twitterStatic?.type, "select");
+        assert.equal(twitterStatic?.["include-all"], true);
+        assert.match(twitterStatic?.icon ?? "", /\/X\.png$/);
+        assert.deepEqual(twitterStatic?.proxies, [
+            PROXY_GROUPS.STATIC_RESOURCES,
+            PROXY_GROUPS.TWITTER,
+            PROXY_GROUPS.SELECT,
+            "香港节点",
+            "美国节点",
+            PROXY_GROUPS.MANUAL,
             "DIRECT",
         ]);
     });

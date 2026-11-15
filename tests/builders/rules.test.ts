@@ -286,8 +286,20 @@ describe("buildRules：SSH 与游戏下载规则", () => {
         const steamFix = rules.indexOf("RULE-SET,SteamFix,DIRECT");
         assert.equal(rules[steamFix - 1], "DOMAIN-SUFFIX,truthsocial.com,Truth Social");
         assert.equal(rules[steamFix + 1], "GEOSITE,category-game-platforms-download,游戏下载");
-        assert.equal(rules[steamFix + 2], "RULE-SET,StaticResources,静态资源");
+        assert.ok(steamFix + 1 < rules.indexOf("RULE-SET,StaticResources,静态资源"));
         assert.equal(rules.filter((rule) => rule.includes("SteamFix")).length, 1);
+    });
+
+    it("Twitter 静态资源规则位于游戏下载之后、StaticResources 之前", () => {
+        const rules = rulesWith();
+        const game = rules.indexOf("GEOSITE,category-game-platforms-download,游戏下载");
+        assert.deepEqual(rules.slice(game + 1, game + 5), [
+            "DOMAIN-SUFFIX,twimg.com,Twitter静态资源",
+            "DOMAIN,assets.pscp.tv,Twitter静态资源",
+            "DOMAIN,cdn.cms-twdigitalassets.com,Twitter静态资源",
+            "RULE-SET,StaticResources,静态资源",
+        ]);
+        assert.ok(rules.indexOf("GEOSITE,twitter,Twitter") > game + 4);
     });
 
     it("不包含上游已删除的 GoogleFCM 规则", () => {

@@ -187,6 +187,17 @@ export const serviceGroups: ServiceGroupDef[] = [
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
+        name: PROXY_GROUPS.TWITTER_STATIC,
+        icon: ICONS.twitterStatic,
+        includeAll: true,
+        // 默认跟随静态资源出口，需要时可切到 Twitter 或其它出口
+        proxies: (ctx) => [
+            PROXY_GROUPS.STATIC_RESOURCES,
+            PROXY_GROUPS.TWITTER,
+            ...ctx.lists.defaultProxies,
+        ],
+    },
+    {
         name: PROXY_GROUPS.WEIBO,
         icon: ICONS.weibo,
         includeAll: true,

@@ -44,6 +44,7 @@ export const ICONS = {
     spotify: `${QURE}/Spotify.png`,
     telegram: `${SELF}/Telegram.png`,
     twitter: `${QURE}/Twitter.png`,
+    twitterStatic: `${QURE}/X.png`,
     weibo: `${QURE}/Weibo.png`,
     truthSocial: `${SELF}/Truth_Social.png`,
     ehentai: `${SELF}/Ehentai.png`,

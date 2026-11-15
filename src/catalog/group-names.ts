@@ -38,6 +38,7 @@ export const PROXY_GROUPS = {
     TELEGRAM: "Telegram",
     TRUTH_SOCIAL: "Truth Social",
     TWITTER: "Twitter",
+    TWITTER_STATIC: "Twitter静态资源",
     TWITCH: "Twitch",
     WEIBO: "新浪微博",
     PIKPAK: "PikPak网盘",

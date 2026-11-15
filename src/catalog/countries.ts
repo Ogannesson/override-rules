@@ -28,7 +28,8 @@ export const COUNTRY_KEYS = {
 
 /**
  * 各地区的元数据：`weight` 决定在代理组列表中的排列顺序（值越小越靠前，未设置则排末尾）；
- * `pattern` 是用于匹配节点名称的正则字符串；`icon` 为策略组图标 URL。
+ * `pattern` 是用于匹配节点名称的正则字符串，其中的国旗 emoji 同时用于按节点名开头国旗归类；
+ * `icon` 为策略组图标 URL。
  */
 export const countriesMeta: Record<string, CountryMeta> = {
     [COUNTRY_KEYS.hongKong]: {
@@ -64,6 +65,7 @@ export const countriesMeta: Record<string, CountryMeta> = {
         pattern:
             "韩国|韩|韓|春川|Chuncheon|首尔|\\b(?:KR|kr)(?:[-_ ]?\\d+(?:[-_ ]?[A-Za-z]{2,})?)?\\b|Korea|KOREA|KOR|ICN|🇰🇷",
         icon: `${QURE}/Korea.png`,
+        excludePattern: "北韩|North Korea|NORTH KOREA",
     },
     [COUNTRY_KEYS.unitedStates]: {
         weight: 50,
@@ -149,7 +151,23 @@ export const countriesMeta: Record<string, CountryMeta> = {
         pattern: "乌克兰|基辅|\\b(?:UA|ua)(?:[-_ ]?\\d+(?:[-_ ]?[A-Za-z]{2,})?)?\\b|Ukraine|KBP|🇺🇦",
         icon: `${QURE}/Ukraine.png`,
     },
+    朝鲜: {
+        weight: 90,
+        pattern:
+            "朝鲜|北韩|平壤|\\b(?:KP|kp)(?:[-_ ]?\\d+(?:[-_ ]?[A-Za-z]{2,})?)?\\b|North Korea|NORTH KOREA|DPRK|PRK|FNJ|🇰🇵",
+        icon: `${CDN_URL}/gh/Semporia/Hand-Painted-icon@master/Rounded_Rectangle/North_Korea.png`,
+    },
 };
+
+/** 国旗 emoji 由两个区域指示符组成。 */
+const FLAG_REGEX = /[\u{1F1E6}-\u{1F1FF}]{2}/gu;
+
+/** 国旗 emoji → 地区名，从各地区 pattern 中出现的国旗提取。 */
+export const countryFlagMap: Partial<Record<string, string>> = Object.fromEntries(
+    Object.entries(countriesMeta).flatMap(([country, meta]) =>
+        (meta.pattern.match(FLAG_REGEX) ?? []).map((flag) => [flag, country])
+    )
+);
 
 /** 地区名 → 用于匹配节点名称的正则。 */
 export const countryRegexMap: Record<string, RegExp> = Object.fromEntries(

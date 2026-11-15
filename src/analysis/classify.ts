@@ -5,7 +5,7 @@
  * 作为配置构建阶段唯一的数据来源。
  */
 
-import { countryExcludeRegexMap, countryRegexMap } from "../catalog/countries";
+import { countryExcludeRegexMap, countryFlagMap, countryRegexMap } from "../catalog/countries";
 import { PROXY_GROUPS } from "../catalog/group-names";
 import { LOW_COST_NODE_MATCHER } from "../catalog/low-cost";
 import { getActiveCountryNames } from "./active-countries";
@@ -13,6 +13,9 @@ import type { NodeAnalysis, ProxyNode, RegionLayout } from "../types/proxy";
 
 /** 生成地区组所需的最少达标地区数；不足时展平到上层代理组。 */
 const MIN_REGION_GROUPS = 2;
+
+/** 节点名称开头的国旗 emoji（两个区域指示符）。 */
+const LEADING_FLAG_REGEX = /^[\u{1F1E6}-\u{1F1FF}]{2}/u;
 
 /**
  * 按 `dialer-proxy` 字段将节点分为落地节点与非落地节点。
@@ -41,25 +44,38 @@ function splitByLanding(nodes: ProxyNode[]): {
 }
 
 /**
- * 按 `countriesMeta` 中定义的地区归类节点，命中首个地区即停止，并排除误匹配。
+ * 判定节点名称所属地区：名称以国旗开头时只按国旗归类（国旗代表实际出口，名称中的
+ * 入口/中转关键字不参与判定），国旗不在 `countriesMeta` 中则不归入任何地区；
+ * 没有国旗时按正则顺序取首个命中，并排除误匹配。
+ * @returns 地区名，无法归类时返回 `undefined`
+ */
+function matchCountry(name: string): string | undefined {
+    const flag = LEADING_FLAG_REGEX.exec(name)?.[0];
+    if (flag) return countryFlagMap[flag];
+
+    for (const [country, regex] of Object.entries(countryRegexMap)) {
+        if (!regex.test(name)) continue;
+        if (countryExcludeRegexMap[country]?.test(name)) continue;
+        return country;
+    }
+    return undefined;
+}
+
+/**
+ * 按 `countriesMeta` 中定义的地区归类节点（判定规则见 `matchCountry`）。
  */
 function collectCountries(nodes: ProxyNode[]): Record<string, ProxyNode[]> {
     const countryNodes = new Map<string, ProxyNode[]>();
 
     for (const node of nodes) {
-        const name = node.name || "";
+        const country = matchCountry(node.name || "");
+        if (!country) continue;
 
-        for (const [country, regex] of Object.entries(countryRegexMap)) {
-            if (!regex.test(name)) continue;
-            if (countryExcludeRegexMap[country]?.test(name)) continue;
-
-            const bucket = countryNodes.get(country);
-            if (bucket) {
-                bucket.push(node);
-            } else {
-                countryNodes.set(country, [node]);
-            }
-            break;
+        const bucket = countryNodes.get(country);
+        if (bucket) {
+            bucket.push(node);
+        } else {
+            countryNodes.set(country, [node]);
         }
     }
 

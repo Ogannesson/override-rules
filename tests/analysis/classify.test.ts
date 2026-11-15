@@ -4,6 +4,16 @@ import { describe, it } from "node:test";
 import { analyzeNodes } from "../../src/analysis/classify";
 import type { ProxyNode } from "../../src/types/proxy";
 
+/** 地区 → 节点名列表，便于整体断言归类结果。 */
+function namesByCountry(countryNodes: Record<string, ProxyNode[]>): Record<string, string[]> {
+    return Object.fromEntries(
+        Object.entries(countryNodes).map(([country, nodes]) => [
+            country,
+            nodes.map((node) => node.name),
+        ])
+    );
+}
+
 const PROXIES: ProxyNode[] = [
     { name: "香港01" },
     { name: "香港02" },
@@ -107,6 +117,51 @@ describe("analyzeNodes", () => {
         const plain = analyzeNodes([{ name: "香港01" }, { name: "美国01" }], 1);
         assert.equal(plain.landing, false);
         assert.equal(plain.nonLandingNodes.length, 2);
+    });
+
+    it("名称以国旗开头时只按国旗归类", () => {
+        const { countryNodes } = analyzeNodes(
+            [
+                { name: "🇺🇸 香港中转 01" },
+                { name: "🇯🇵 东京 IEPL" },
+                { name: "🇭🇰HK 01" },
+                { name: "香港 🇺🇸 02" },
+            ],
+            1
+        );
+        assert.deepEqual(namesByCountry(countryNodes), {
+            美国: ["🇺🇸 香港中转 01"],
+            日本: ["🇯🇵 东京 IEPL"],
+            香港: ["🇭🇰HK 01", "香港 🇺🇸 02"],
+        });
+    });
+
+    it("开头国旗不在地区表中时不归入任何地区", () => {
+        const { countryNodes } = analyzeNodes(
+            [{ name: "🇧🇷 香港入口 01" }, { name: "🇿🇦 US 02" }, { name: "美国 03" }],
+            1
+        );
+        assert.deepEqual(namesByCountry(countryNodes), { 美国: ["美国 03"] });
+    });
+
+    it("区分朝鲜与韩国", () => {
+        const { countryNodes } = analyzeNodes(
+            [
+                { name: "朝鲜 01" },
+                { name: "北韩 02" },
+                { name: "North Korea 03" },
+                { name: "NORTH KOREA 04" },
+                { name: "🇰🇵 平壤" },
+                { name: "韩国 01" },
+                { name: "Korea 02" },
+                { name: "🇰🇷 Seoul" },
+            ],
+            1
+        );
+        assert.deepEqual(namesByCountry(countryNodes), {
+            朝鲜: ["朝鲜 01", "北韩 02", "North Korea 03", "NORTH KOREA 04", "🇰🇵 平壤"],
+            韩国: ["韩国 01", "Korea 02", "🇰🇷 Seoul"],
+        });
     });
 
     it("只有落地节点时仍启用 landing，并进入展平模式", () => {

@@ -115,6 +115,8 @@ export interface BuildBaseListsInput {
     landing: boolean;
     landingNodes: ProxyNode[];
     lowCostNodes: ProxyNode[];
+    warpNodes: ProxyNode[];
+    globalResidentialNodes: ProxyNode[];
     nonLandingNodes: ProxyNode[];
     tailscaleNodes: ProxyNode[];
     regexFilter: boolean;
@@ -139,8 +141,12 @@ export interface NodeAnalysis {
     countryNames: string[];
     /** 地区组的实际布局：分组或展平。 */
     regionLayout: RegionLayout;
-    /** 匹配低倍率正则的节点。 */
+    /** 匹配低倍率正则的节点（不含 WARP 与 Global 家宽节点）。 */
     lowCostNodes: ProxyNode[];
+    /** Cloudflare WARP 出口节点（名称含 warp/cloudflare），出口地区可切换。 */
+    warpNodes: ProxyNode[];
+    /** Global 家宽节点（名称以 🌐 开头且不属于 WARP），出口地区可切换。 */
+    globalResidentialNodes: ProxyNode[];
     /** `type: "tailscale"` 的节点。 */
     tailscaleNodes: ProxyNode[];
     /** 是否存在 Tailscale 节点。 */

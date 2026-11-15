@@ -1,11 +1,12 @@
 /**
  * 节点多维度分类。
  *
- * 将上游订阅的原始节点列表一次性归类为：落地/非落地、国家/地区、低倍率、Tailscale，
- * 作为配置构建阶段唯一的数据来源。
+ * 将上游订阅的原始节点列表一次性归类为：落地/非落地、国家/地区、低倍率、WARP、Global 家宽、
+ * Tailscale，作为配置构建阶段唯一的数据来源。
  */
 
 import { countryExcludeRegexMap, countryFlagMap, countryRegexMap } from "../catalog/countries";
+import { GLOBAL_RESIDENTIAL_NODE_MATCHER, WARP_NODE_MATCHER } from "../catalog/exit-floating";
 import { PROXY_GROUPS } from "../catalog/group-names";
 import { LOW_COST_NODE_MATCHER } from "../catalog/low-cost";
 import { getActiveCountryNames } from "./active-countries";
@@ -87,6 +88,21 @@ function collectLowCost(nodes: ProxyNode[]): ProxyNode[] {
     return nodes.filter((node) => LOW_COST_NODE_MATCHER.regex.test(node.name || ""));
 }
 
+/** 筛选出所有 Cloudflare WARP 出口节点（名称含 warp/cloudflare）。 */
+function collectWarp(nodes: ProxyNode[]): ProxyNode[] {
+    return nodes.filter((node) => WARP_NODE_MATCHER.regex.test(node.name || ""));
+}
+
+/** 筛选出所有 Global 家宽节点（名称以 🌐 开头）；同时命中 WARP 的节点归 WARP。 */
+function collectGlobalResidential(nodes: ProxyNode[]): ProxyNode[] {
+    return nodes.filter((node) => {
+        const name = node.name || "";
+        return (
+            GLOBAL_RESIDENTIAL_NODE_MATCHER.regex.test(name) && !WARP_NODE_MATCHER.regex.test(name)
+        );
+    });
+}
+
 /** 筛选出所有 Tailscale 节点。 */
 function isTailscaleNode(node: ProxyNode): boolean {
     return node.type === "tailscale";
@@ -114,9 +130,15 @@ export function analyzeNodes(nodes: ProxyNode[], threshold: number): NodeAnalysi
 
     // 链式代理激活时，国家/低倍率分类只扫描非落地节点；Tailscale 节点不参与常规分类。
     const scopedNodes = excludeTailscale(landing ? nonLandingNodes : nodes);
-    const countryNodes = collectCountries(scopedNodes);
+    // WARP 与 Global 家宽节点出口地区可变，单独成组，不参与地区分类与低倍率分组；
+    // 展平模式下它们仍作为普通非落地节点直接进入上层代理组。
+    const warpNodes = collectWarp(scopedNodes);
+    const globalResidentialNodes = collectGlobalResidential(scopedNodes);
+    const exitFloatingNodes = new Set([...warpNodes, ...globalResidentialNodes]);
+    const classifiableNodes = scopedNodes.filter((node) => !exitFloatingNodes.has(node));
+    const countryNodes = collectCountries(classifiableNodes);
     const countryNames = getActiveCountryNames(countryNodes, threshold);
-    const lowCostNodes = collectLowCost(scopedNodes);
+    const lowCostNodes = collectLowCost(classifiableNodes);
 
     const regionLayout: RegionLayout =
         countryNames.length >= MIN_REGION_GROUPS
@@ -137,6 +159,8 @@ export function analyzeNodes(nodes: ProxyNode[], threshold: number): NodeAnalysi
         countryNames,
         regionLayout,
         lowCostNodes,
+        warpNodes,
+        globalResidentialNodes,
         tailscaleNodes,
         hasTailscale: tailscaleNodes.length > 0,
     };

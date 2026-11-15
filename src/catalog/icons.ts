@@ -55,5 +55,7 @@ export const ICONS = {
     auto: `${QURE}/Auto.png`,
     fallback: `${QURE}/Available_1.png`,
     lowCost: `${QURE}/Lab.png`,
+    warp: `${QURE}/Cloudflare.png`,
+    globalResidential: `${QURE}/World_Map.png`,
     global: `${QURE}/Global.png`,
 } as const;

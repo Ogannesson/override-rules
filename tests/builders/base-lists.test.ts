@@ -10,6 +10,8 @@ function buildInput(overrides: Partial<BuildBaseListsInput> = {}): BuildBaseList
         landing: false,
         landingNodes: [],
         lowCostNodes: [],
+        warpNodes: [],
+        globalResidentialNodes: [],
         nonLandingNodes: [],
         tailscaleNodes: [],
         regexFilter: false,
@@ -107,16 +109,21 @@ describe("buildBaseLists", () => {
             PROXY_GROUPS.LANDING,
             { "include-all": true, "exclude-filter": "^(?:落地A)$" },
         ]);
+        // fork：regex 模式下 WARP节点、Global家宽 组总会生成，排在低倍率之后。
         assert.deepEqual(lists.defaultSelector, [
             PROXY_GROUPS.LANDING,
             { "include-all": true, "exclude-filter": "^(?:落地A)$" },
             PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             "DIRECT",
         ]);
         assert.deepEqual(lists.defaultProxies, [
             PROXY_GROUPS.LANDING,
             { "include-all": true, "exclude-filter": "^(?:落地A)$" },
             PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             "DIRECT",
         ]);
         assert.deepEqual(lists.defaultProxiesDirect, [
@@ -124,6 +131,8 @@ describe("buildBaseLists", () => {
             PROXY_GROUPS.LANDING,
             { "include-all": true, "exclude-filter": "^(?:落地A)$" },
             PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
         ]);
         // 前置代理必须显式枚举非落地节点，避免与落地节点的 dialer-proxy 形成循环。
         assert.deepEqual(lists.frontProxySelector, ["DIRECT", "香港01"]);
@@ -141,18 +150,24 @@ describe("buildBaseLists", () => {
         assert.deepEqual(lists.defaultSelector, [
             PROXY_GROUPS.LANDING,
             PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             "DIRECT",
         ]);
         assert.deepEqual(lists.defaultFallback, [PROXY_GROUPS.LANDING]);
         assert.deepEqual(lists.defaultProxies, [
             PROXY_GROUPS.LANDING,
             PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             "DIRECT",
         ]);
         assert.deepEqual(lists.defaultProxiesDirect, [
             "DIRECT",
             PROXY_GROUPS.LANDING,
             PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
         ]);
         assert.deepEqual(lists.frontProxySelector, ["DIRECT"]);
     });

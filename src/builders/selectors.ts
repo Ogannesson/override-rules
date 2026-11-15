@@ -46,6 +46,8 @@ function buildFlattenedNodeSource(
 interface FlattenedListsInput {
     landing: boolean;
     hasLowCost: boolean;
+    hasWarp: boolean;
+    hasGlobalResidential: boolean;
     flattenedNodeSource: ProxyGroupNodeSource | null;
     flattenedNodes: ProxyNode[];
 }
@@ -53,6 +55,8 @@ interface FlattenedListsInput {
 function buildFlattenedBaseLists({
     landing,
     hasLowCost,
+    hasWarp,
+    hasGlobalResidential,
     flattenedNodeSource,
     flattenedNodes,
 }: FlattenedListsInput): BaseLists {
@@ -64,6 +68,8 @@ function buildFlattenedBaseLists({
         landing && PROXY_GROUPS.LANDING,
         flattenedNodeSource,
         hasLowCost && PROXY_GROUPS.LOW_COST,
+        hasWarp && PROXY_GROUPS.WARP,
+        hasGlobalResidential && PROXY_GROUPS.GLOBAL_RESIDENTIAL,
         "DIRECT"
     );
 
@@ -86,13 +92,17 @@ function buildFlattenedBaseLists({
             landing && PROXY_GROUPS.LANDING,
             flattenedNodeSource,
             hasLowCost && PROXY_GROUPS.LOW_COST,
+            hasWarp && PROXY_GROUPS.WARP,
+            hasGlobalResidential && PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             "DIRECT"
         ),
         defaultProxiesDirect: buildList<ProxyGroupCandidate>(
             "DIRECT",
             landing && PROXY_GROUPS.LANDING,
             flattenedNodeSource,
-            hasLowCost && PROXY_GROUPS.LOW_COST
+            hasLowCost && PROXY_GROUPS.LOW_COST,
+            hasWarp && PROXY_GROUPS.WARP,
+            hasGlobalResidential && PROXY_GROUPS.GLOBAL_RESIDENTIAL
         ),
         defaultFallback,
         frontProxySelector,
@@ -106,6 +116,8 @@ interface GroupedListsInput {
     landing: boolean;
     regexFilter: boolean;
     hasLowCost: boolean;
+    hasWarp: boolean;
+    hasGlobalResidential: boolean;
     suffixedCountryNames: string[];
     tailscaleNodes: ProxyNode[];
     nonLandingNodes: ProxyNode[];
@@ -115,6 +127,8 @@ function buildGroupedBaseLists({
     landing,
     regexFilter,
     hasLowCost,
+    hasWarp,
+    hasGlobalResidential,
     suffixedCountryNames,
     tailscaleNodes,
     nonLandingNodes,
@@ -140,6 +154,8 @@ function buildGroupedBaseLists({
             landing && PROXY_GROUPS.LANDING,
             suffixedCountryNames,
             hasLowCost && PROXY_GROUPS.LOW_COST,
+            hasWarp && PROXY_GROUPS.WARP,
+            hasGlobalResidential && PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             PROXY_GROUPS.MANUAL,
             "DIRECT"
         ),
@@ -148,6 +164,8 @@ function buildGroupedBaseLists({
             landing && PROXY_GROUPS.LANDING,
             suffixedCountryNames,
             hasLowCost && PROXY_GROUPS.LOW_COST,
+            hasWarp && PROXY_GROUPS.WARP,
+            hasGlobalResidential && PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             PROXY_GROUPS.MANUAL,
             "DIRECT"
         ),
@@ -156,6 +174,8 @@ function buildGroupedBaseLists({
             landing && PROXY_GROUPS.LANDING,
             suffixedCountryNames,
             hasLowCost && PROXY_GROUPS.LOW_COST,
+            hasWarp && PROXY_GROUPS.WARP,
+            hasGlobalResidential && PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             PROXY_GROUPS.SELECT,
             PROXY_GROUPS.MANUAL
         ),
@@ -176,6 +196,8 @@ export function buildBaseLists({
     landing,
     landingNodes,
     lowCostNodes,
+    warpNodes,
+    globalResidentialNodes,
     nonLandingNodes,
     tailscaleNodes,
     regexFilter,
@@ -183,11 +205,15 @@ export function buildBaseLists({
 }: BuildBaseListsInput): BaseLists {
     const suffixedCountryNames = regions.groupedCountries.map(countryGroupName);
     const hasLowCost = lowCostNodes.length > 0 || regexFilter;
+    const hasWarp = warpNodes.length > 0 || regexFilter;
+    const hasGlobalResidential = globalResidentialNodes.length > 0 || regexFilter;
 
     if (regions.mode === "flattened") {
         return buildFlattenedBaseLists({
             landing,
             hasLowCost,
+            hasWarp,
+            hasGlobalResidential,
             flattenedNodeSource: buildFlattenedNodeSource(
                 regions.flattenedNodes,
                 landingNodes,
@@ -202,6 +228,8 @@ export function buildBaseLists({
         landing,
         regexFilter,
         hasLowCost,
+        hasWarp,
+        hasGlobalResidential,
         suffixedCountryNames,
         tailscaleNodes,
         nonLandingNodes,

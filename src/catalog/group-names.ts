@@ -13,6 +13,8 @@ export const PROXY_GROUPS = {
     FALLBACK: "故障转移",
     LANDING: "落地节点",
     LOW_COST: "低倍率节点",
+    WARP: "WARP节点",
+    GLOBAL_RESIDENTIAL: "Global家宽",
     FRONT_PROXY: "前置代理",
     STATIC_RESOURCES: "静态资源",
     GAME_DOWNLOAD: "游戏下载",

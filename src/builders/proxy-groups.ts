@@ -8,6 +8,7 @@
  */
 
 import { countriesMeta } from "../catalog/countries";
+import { GLOBAL_RESIDENTIAL_NODE_MATCHER, WARP_NODE_MATCHER } from "../catalog/exit-floating";
 import { countryGroupName, PROXY_GROUPS } from "../catalog/group-names";
 import { ICONS } from "../catalog/icons";
 import { LOW_COST_NODE_MATCHER } from "../catalog/low-cost";
@@ -21,7 +22,12 @@ import {
 } from "../domain/proxy-group";
 import { isNotNull } from "../utils/primitives";
 import { buildNodeExcludeFilter, combineExcludeFilters } from "../utils/regex";
-import type { GroupBuildContext, ProxyGroup } from "../types/proxy";
+import type {
+    GroupBuildContext,
+    ProxyGroup,
+    ProxyGroupNodeSource,
+    ProxyNode,
+} from "../types/proxy";
 
 /** 顶层选择类代理组：选择代理、手动选择、以及链式代理相关组。 */
 function buildFrontGroups(ctx: GroupBuildContext): Array<ProxyGroup | null> {
@@ -86,7 +92,29 @@ function buildTailGroups(ctx: GroupBuildContext): Array<ProxyGroup | null> {
     ];
 }
 
-/** 低倍率组与各地区组。 */
+/**
+ * 交给 mihomo 正则引擎的 `exclude-filter`，不在 JS 侧编译：WARP_EXCLUDE 把 WARP 节点排除出
+ * Global家宽 组，EXIT_FLOATING_EXCLUDE 把 WARP 与 Global 家宽节点排除出各地区组与低倍率组。
+ */
+const WARP_EXCLUDE = `(?i:${WARP_NODE_MATCHER.source})`;
+const EXIT_FLOATING_EXCLUDE = `(?i:${WARP_NODE_MATCHER.source}|${GLOBAL_RESIDENTIAL_NODE_MATCHER.source})`;
+
+/**
+ * 出口地区可切换的节点组（WARP节点、Global家宽）。出口在节点内切换，url-test/load-balance
+ * 无意义，固定为 select；只有对应节点存在或 regex 模式时才生成。
+ */
+function exitFloatingGroup(
+    name: string,
+    icon: string,
+    nodes: ProxyNode[],
+    regexSource: ProxyGroupNodeSource,
+    regexFilter: boolean
+): ProxyGroup | null {
+    if (nodes.length === 0 && !regexFilter) return null;
+    return selectGroup(name, icon, regexFilter ? [regexSource] : nodes.map((node) => node.name));
+}
+
+/** 低倍率组、WARP节点、Global家宽与各地区组。 */
 function buildRegionGroups(ctx: GroupBuildContext): Array<ProxyGroup | null> {
     const { flags, nodes } = ctx;
     const hasLowCost = nodes.lowCostNodes.length > 0 || flags.regexFilter;
@@ -102,17 +130,40 @@ function buildRegionGroups(ctx: GroupBuildContext): Array<ProxyGroup | null> {
                   : {
                         "include-all": true as const,
                         filter: LOW_COST_NODE_MATCHER.pattern,
-                        ...(tailscaleExcludeFilter
-                            ? { "exclude-filter": tailscaleExcludeFilter }
-                            : {}),
+                        "exclude-filter": combineExcludeFilters(
+                            EXIT_FLOATING_EXCLUDE,
+                            tailscaleExcludeFilter
+                        ),
                     },
           })
         : null;
 
+    const warpGroup = exitFloatingGroup(
+        PROXY_GROUPS.WARP,
+        ICONS.warp,
+        nodes.warpNodes,
+        { "include-all": true, filter: WARP_NODE_MATCHER.pattern },
+        flags.regexFilter
+    );
+    const globalResidentialGroup = exitFloatingGroup(
+        PROXY_GROUPS.GLOBAL_RESIDENTIAL,
+        ICONS.globalResidential,
+        nodes.globalResidentialNodes,
+        {
+            "include-all": true,
+            filter: GLOBAL_RESIDENTIAL_NODE_MATCHER.pattern,
+            "exclude-filter": WARP_EXCLUDE,
+        },
+        flags.regexFilter
+    );
+
     const countryGroups = nodes.regionLayout.groupedCountries.map((country) => {
         const meta = countriesMeta[country];
 
-        const excludeFilter = combineExcludeFilters(meta.excludePattern, tailscaleExcludeFilter);
+        const excludeFilter = combineExcludeFilters(
+            combineExcludeFilters(meta.excludePattern, EXIT_FLOATING_EXCLUDE),
+            tailscaleExcludeFilter
+        );
         const nodeSource = flags.regexFilter
             ? {
                   "include-all": true as const,
@@ -129,7 +180,7 @@ function buildRegionGroups(ctx: GroupBuildContext): Array<ProxyGroup | null> {
         });
     });
 
-    return [lowCostGroup, ...countryGroups];
+    return [lowCostGroup, warpGroup, globalResidentialGroup, ...countryGroups];
 }
 
 /**

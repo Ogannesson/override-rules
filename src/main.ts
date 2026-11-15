@@ -17,6 +17,10 @@ https://github.com/powerfullz/override-rules
 - adblock: 去广告规则（0=关闭，1=adrules.top，2=217heidai，3=AWAvenue，默认 3）
 - asn: 为 AI服务 追加 Anthropic 全部 ASN 的 IP-ASN 规则（默认 false；开启后需能下载 ASN 数据库，否则整份配置加载失败）
 
+WARP 出口分组：自动识别名称含 warp/cloudflare 的节点并单独成组（挂到各服务分组候选），无需传参。
+Global家宽分组：名称以 🌐 开头的多地区家宽节点同样单独成组，不进地区分组。
+地区归类：节点名称以国旗开头时只按国旗归入对应地区，未知国旗不归入任何地区（仅枚举模式；regex 模式仍按正则匹配）。
+
 源码位于 `src/`，入口为 `src/main.ts`。
 */
 
@@ -56,6 +60,8 @@ function main(config: ClashConfig): ClashConfig {
         landing: nodes.landing,
         landingNodes: nodes.landingNodes,
         lowCostNodes: nodes.lowCostNodes,
+        warpNodes: nodes.warpNodes,
+        globalResidentialNodes: nodes.globalResidentialNodes,
         nonLandingNodes: nodes.nonLandingNodes,
         tailscaleNodes: nodes.tailscaleNodes,
         regexFilter: flags.regexFilter,

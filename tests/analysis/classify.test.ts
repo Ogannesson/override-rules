@@ -164,6 +164,53 @@ describe("analyzeNodes", () => {
         });
     });
 
+    it("识别 WARP 与 Global 家宽节点，并排除出地区与低倍率归类", () => {
+        const nodes: ProxyNode[] = [
+            { name: "香港01" },
+            { name: "Cloudflare WARP 🇺🇸" },
+            { name: "🇺🇸 warp 0.2x" },
+            { name: "香港 CLOUDFLARE 中转" },
+            { name: "🌐 家宽 多地区 0.5x" },
+            { name: "🌐 WARP" },
+            { name: "香港 🌐 家宽" },
+        ];
+        const result = analyzeNodes(nodes, 1);
+
+        assert.deepEqual(
+            result.warpNodes.map((n) => n.name),
+            ["Cloudflare WARP 🇺🇸", "🇺🇸 warp 0.2x", "香港 CLOUDFLARE 中转", "🌐 WARP"]
+        );
+        // 同时命中 WARP 的 🌐 节点归 WARP；🌐 不在开头的不算 Global 家宽。
+        assert.deepEqual(
+            result.globalResidentialNodes.map((n) => n.name),
+            ["🌐 家宽 多地区 0.5x"]
+        );
+        assert.deepEqual(namesByCountry(result.countryNodes), {
+            香港: ["香港01", "香港 🌐 家宽"],
+        });
+        assert.deepEqual(result.lowCostNodes, []);
+        // 展平模式下它们仍是普通非落地节点。
+        assert.deepEqual(
+            result.regionLayout.flattenedNodes.map((n) => n.name),
+            nodes.map((n) => n.name)
+        );
+    });
+
+    it("链式代理激活时只从非落地节点中识别 WARP，Tailscale 不参与", () => {
+        const result = analyzeNodes(
+            [
+                { name: "WARP 落地", "dialer-proxy": "前置代理" },
+                { name: "WARP 中转" },
+                { name: "WARP Tailscale", type: "tailscale" },
+            ],
+            1
+        );
+        assert.deepEqual(
+            result.warpNodes.map((n) => n.name),
+            ["WARP 中转"]
+        );
+    });
+
     it("只有落地节点时仍启用 landing，并进入展平模式", () => {
         const allLanding = analyzeNodes(
             [

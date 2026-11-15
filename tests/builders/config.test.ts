@@ -20,6 +20,8 @@ function run(args: ScriptArgs, config: ClashConfig): ClashConfig {
         landing: nodes.landing,
         landingNodes: nodes.landingNodes,
         lowCostNodes: nodes.lowCostNodes,
+        warpNodes: nodes.warpNodes,
+        globalResidentialNodes: nodes.globalResidentialNodes,
         nonLandingNodes: nodes.nonLandingNodes,
         tailscaleNodes: nodes.tailscaleNodes,
         regexFilter: flags.regexFilter,
@@ -212,10 +214,18 @@ describe("assembleConfig", () => {
         const google = group(result, PROXY_GROUPS.GOOGLE);
         assert.equal(google?.["include-all"], true);
         assert.equal(google?.["exclude-filter"], "^(?:落地A)$");
-        assert.deepEqual(google?.proxies, [PROXY_GROUPS.LANDING, PROXY_GROUPS.LOW_COST, "DIRECT"]);
+        assert.deepEqual(google?.proxies, [
+            PROXY_GROUPS.LANDING,
+            PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
+            "DIRECT",
+        ]);
         assert.deepEqual(group(result, PROXY_GROUPS.FINANCE)?.proxies, [
             PROXY_GROUPS.LANDING,
             PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
             "DIRECT",
         ]);
     });
@@ -354,13 +364,14 @@ describe("assembleConfig", () => {
             }
         );
 
+        // fork：中间夹着 WARP / Global 家宽的排除规则，三段合并而非互相覆盖。
         assert.equal(
             group(result, "美国节点")?.["exclude-filter"],
-            "美属|亚美尼亚|圣多美|普林西比|^(?:美国-Tailscale 低倍率)$"
+            "美属|亚美尼亚|圣多美|普林西比|(?i:warp|cloudflare|^🌐)|^(?:美国-Tailscale 低倍率)$"
         );
         assert.equal(
             group(result, PROXY_GROUPS.LOW_COST)?.["exclude-filter"],
-            "^(?:美国-Tailscale 低倍率)$"
+            "(?i:warp|cloudflare|^🌐)|^(?:美国-Tailscale 低倍率)$"
         );
     });
 
@@ -565,5 +576,239 @@ describe("assembleConfig", () => {
         const result = run({ regex: "true" }, CONFIG);
         const weibo = group(result, PROXY_GROUPS.WEIBO);
         assert.equal(weibo?.["include-all"], true);
+    });
+});
+
+/** 代理组名在全部代理组中的位置。 */
+function groupIndex(config: ClashConfig, name: string): number {
+    return (config["proxy-groups"] ?? []).findIndex((item) => item.name === name);
+}
+
+/** 断言每个代理组的 proxies 只引用已生成的代理组、订阅节点或内置策略。 */
+function assertNoDanglingRefs(config: ClashConfig): void {
+    const known = new Set([
+        "DIRECT",
+        "REJECT",
+        "REJECT-DROP",
+        ...(config["proxy-groups"] ?? []).map((item) => item.name),
+        ...(config.proxies ?? []).map((node) => node.name),
+    ]);
+    for (const item of config["proxy-groups"] ?? []) {
+        for (const ref of item.proxies ?? []) {
+            assert.ok(known.has(ref), `${item.name} 引用了不存在的 ${ref}`);
+        }
+    }
+}
+
+/** 按 mihomo 语义判断 `exclude-filter` 是否排除某个节点名（regexp2 搜索匹配）。 */
+function excludes(filter: string | undefined, name: string): boolean {
+    return filter !== undefined && new RegExp(filter).test(name);
+}
+
+const EXIT_FLOATING_CONFIG: ClashConfig = {
+    proxies: [
+        { name: "香港01" },
+        { name: "香港02" },
+        { name: "美国01" },
+        { name: "美国02" },
+        { name: "韩国01" },
+        { name: "韩国02" },
+        { name: "香港 0.2x 大流量" },
+        { name: "Cloudflare WARP 🇺🇸" },
+        { name: "warp-香港 0.2x" },
+        { name: "🌐 家宽 多地区" },
+        { name: "🌐 WARP 中转" },
+    ],
+};
+
+describe("WARP节点 与 Global家宽", () => {
+    it("枚举模式下单独成组，排在低倍率之后、地区组之前", () => {
+        const result = run({}, EXIT_FLOATING_CONFIG);
+
+        const warp = group(result, PROXY_GROUPS.WARP);
+        assert.equal(warp?.type, "select");
+        assert.match(warp?.icon ?? "", /\/Cloudflare\.png$/);
+        assert.deepEqual(warp?.proxies, ["Cloudflare WARP 🇺🇸", "warp-香港 0.2x", "🌐 WARP 中转"]);
+
+        const globalResidential = group(result, PROXY_GROUPS.GLOBAL_RESIDENTIAL);
+        assert.equal(globalResidential?.type, "select");
+        assert.match(globalResidential?.icon ?? "", /\/World_Map\.png$/);
+        assert.deepEqual(globalResidential?.proxies, ["🌐 家宽 多地区"]);
+
+        const lowCost = groupIndex(result, PROXY_GROUPS.LOW_COST);
+        assert.equal(groupIndex(result, PROXY_GROUPS.WARP), lowCost + 1);
+        assert.equal(groupIndex(result, PROXY_GROUPS.GLOBAL_RESIDENTIAL), lowCost + 2);
+        assert.equal(groupIndex(result, "香港节点"), lowCost + 3);
+    });
+
+    it("不参与地区与低倍率归类", () => {
+        const result = run({}, EXIT_FLOATING_CONFIG);
+        assert.deepEqual(group(result, "香港节点")?.proxies, [
+            "香港01",
+            "香港02",
+            "香港 0.2x 大流量",
+        ]);
+        assert.deepEqual(group(result, "美国节点")?.proxies, ["美国01", "美国02"]);
+        assert.deepEqual(group(result, PROXY_GROUPS.LOW_COST)?.proxies, ["香港 0.2x 大流量"]);
+    });
+
+    it("进入选择代理与服务组候选，位于低倍率之后、手动选择之前", () => {
+        const result = run({}, EXIT_FLOATING_CONFIG);
+        const regions = ["香港节点", "韩国节点", "美国节点"];
+
+        assert.deepEqual(group(result, PROXY_GROUPS.SELECT)?.proxies, [
+            PROXY_GROUPS.AUTO,
+            PROXY_GROUPS.FALLBACK,
+            ...regions,
+            PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
+            PROXY_GROUPS.MANUAL,
+            "DIRECT",
+        ]);
+        assert.deepEqual(group(result, PROXY_GROUPS.GOOGLE)?.proxies, [
+            PROXY_GROUPS.SELECT,
+            ...regions,
+            PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
+            PROXY_GROUPS.MANUAL,
+            "DIRECT",
+        ]);
+        assert.deepEqual(group(result, PROXY_GROUPS.WEIBO)?.proxies, [
+            "DIRECT",
+            ...regions,
+            PROXY_GROUPS.LOW_COST,
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
+            PROXY_GROUPS.SELECT,
+            PROXY_GROUPS.MANUAL,
+        ]);
+        // 自动选择/故障转移只用地区组，不混入出口可变的节点。
+        assert.deepEqual(group(result, PROXY_GROUPS.AUTO)?.proxies, regions);
+        assertNoDanglingRefs(result);
+    });
+
+    it("没有对应节点时不生成分组，也不被引用", () => {
+        const result = run({}, CONFIG);
+        assert.equal(group(result, PROXY_GROUPS.WARP), undefined);
+        assert.equal(group(result, PROXY_GROUPS.GLOBAL_RESIDENTIAL), undefined);
+        assertNoDanglingRefs(result);
+    });
+
+    it("只有 WARP 节点时不生成 Global家宽 组", () => {
+        const result = run({}, { proxies: [...(CONFIG.proxies ?? []), { name: "WARP 01" }] });
+        assert.deepEqual(group(result, PROXY_GROUPS.WARP)?.proxies, ["WARP 01"]);
+        assert.equal(group(result, PROXY_GROUPS.GLOBAL_RESIDENTIAL), undefined);
+        assertNoDanglingRefs(result);
+    });
+
+    it("regex 模式下用 include-all + filter，Global家宽 排除 WARP", () => {
+        const result = run({ regex: "true" }, CONFIG);
+
+        const warp = group(result, PROXY_GROUPS.WARP);
+        assert.equal(warp?.["include-all"], true);
+        assert.equal(warp?.filter, "(?i)warp|cloudflare");
+        assert.equal(warp?.["exclude-filter"], undefined);
+        assert.equal(warp?.proxies, undefined);
+
+        const globalResidential = group(result, PROXY_GROUPS.GLOBAL_RESIDENTIAL);
+        assert.equal(globalResidential?.["include-all"], true);
+        assert.equal(globalResidential?.filter, "(?i)^🌐");
+        assert.equal(globalResidential?.["exclude-filter"], "(?i:warp|cloudflare)");
+        assert.ok(excludes(globalResidential?.["exclude-filter"], "🌐 WARP 中转"));
+        assert.ok(!excludes(globalResidential?.["exclude-filter"], "🌐 家宽 多地区"));
+    });
+
+    it("regex 模式下地区组与低倍率组的 exclude-filter 合并排除 WARP、Global 家宽与 Tailscale", () => {
+        const tailscale = { name: "韩国-Tailscale 0.2x", type: "tailscale" };
+        const result = run(
+            { regex: "true" },
+            { proxies: [...(EXIT_FLOATING_CONFIG.proxies ?? []), tailscale] }
+        );
+
+        const korea = group(result, "韩国节点")?.["exclude-filter"];
+        assert.equal(
+            korea,
+            "北韩|North Korea|NORTH KOREA|(?i:warp|cloudflare|^🌐)|^(?:韩国-Tailscale 0\\.2x)$"
+        );
+        const hongKong = group(result, "香港节点")?.["exclude-filter"];
+        assert.equal(hongKong, "(?i:warp|cloudflare|^🌐)|^(?:韩国-Tailscale 0\\.2x)$");
+        const lowCost = group(result, PROXY_GROUPS.LOW_COST)?.["exclude-filter"];
+        assert.equal(lowCost, "(?i:warp|cloudflare|^🌐)|^(?:韩国-Tailscale 0\\.2x)$");
+
+        for (const filter of [korea, hongKong, lowCost]) {
+            for (const name of [
+                "Cloudflare WARP 🇺🇸",
+                "warp-香港 0.2x",
+                "🌐 家宽 多地区",
+                "🌐 WARP 中转",
+                "韩国-Tailscale 0.2x",
+            ]) {
+                assert.ok(excludes(filter, name), `${filter} 应排除 ${name}`);
+            }
+            for (const name of ["香港01", "韩国01", "香港 0.2x 大流量", "香港 🌐"]) {
+                assert.ok(!excludes(filter, name), `${filter} 不应排除 ${name}`);
+            }
+        }
+        assert.ok(excludes(korea, "North Korea 01"));
+        assert.ok(excludes(korea, "北韩 02"));
+    });
+
+    it("展平模式下仍生成分组，排在低倍率之后且不引用手动选择", () => {
+        const result = run(
+            {},
+            { proxies: [{ name: "NodeA" }, { name: "Cloudflare WARP" }, { name: "🌐 家宽" }] }
+        );
+
+        assert.equal(group(result, PROXY_GROUPS.MANUAL), undefined);
+        assert.deepEqual(group(result, PROXY_GROUPS.WARP)?.proxies, ["Cloudflare WARP"]);
+        assert.deepEqual(group(result, PROXY_GROUPS.GLOBAL_RESIDENTIAL)?.proxies, ["🌐 家宽"]);
+        // 展平模式下 WARP / Global 节点仍是普通非落地节点，直接出现在上层代理组中。
+        assert.deepEqual(group(result, PROXY_GROUPS.SELECT)?.proxies, [
+            "NodeA",
+            "Cloudflare WARP",
+            "🌐 家宽",
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
+            "DIRECT",
+        ]);
+        assert.deepEqual(group(result, PROXY_GROUPS.AUTO)?.proxies, [
+            "NodeA",
+            "Cloudflare WARP",
+            "🌐 家宽",
+        ]);
+        assert.deepEqual(group(result, PROXY_GROUPS.FINANCE)?.proxies, [
+            "NodeA",
+            "Cloudflare WARP",
+            "🌐 家宽",
+            PROXY_GROUPS.WARP,
+            PROXY_GROUPS.GLOBAL_RESIDENTIAL,
+            "DIRECT",
+        ]);
+        assertNoDanglingRefs(result);
+    });
+
+    it("展平 + regex 模式下同样不出现悬空引用", () => {
+        const result = run(
+            { regex: "true" },
+            {
+                proxies: [
+                    { name: "NodeA" },
+                    { name: "Cloudflare WARP" },
+                    { name: "落地A", "dialer-proxy": "前置代理" },
+                ],
+            }
+        );
+        assert.equal(group(result, PROXY_GROUPS.MANUAL), undefined);
+        assert.ok(group(result, PROXY_GROUPS.WARP));
+        assert.ok(group(result, PROXY_GROUPS.GLOBAL_RESIDENTIAL));
+        assertNoDanglingRefs(result);
+    });
+
+    it("只有 WARP 节点时自动选择与故障转移仍使用该节点", () => {
+        const result = run({}, { proxies: [{ name: "Cloudflare WARP" }] });
+        assert.deepEqual(group(result, PROXY_GROUPS.AUTO)?.proxies, ["Cloudflare WARP"]);
+        assert.deepEqual(group(result, PROXY_GROUPS.FALLBACK)?.proxies, ["Cloudflare WARP"]);
     });
 });

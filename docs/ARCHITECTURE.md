@@ -25,7 +25,7 @@ flowchart TD
 
     subgraph Parser["3. 节点多维度分类 (src/analysis)"]
         CP --> AN["analyzeNodes()"]
-        AN --> NA["NodeAnalysis<br/>(landing / countryNodes / lowCost / tailscale)"]
+        AN --> NA["NodeAnalysis<br/>(landing / countryNodes / lowCost / warp / globalResidential / tailscale)"]
     end
 
     subgraph Builders["4. 配置构建 (src/builders + src/catalog)"]
@@ -52,7 +52,7 @@ flowchart TD
 |------|----------|------|
 | 输入 | — | 上游订阅传入的代理节点列表 (`config.proxies`)、可继承的 `hosts`/DNS 字段与用户提供的 URL 覆写参数 (`$arguments`) |
 | 参数解析 | `src/args/` | 将原始字符串参数转换为类型安全的 `FeatureFlags` 对象；默认值集中在 `schema.ts` |
-| 节点分类 | `src/analysis/` | 将节点按落地/非落地、所属国家/地区、低价节点和 Tailscale 类型分类；按阈值提取活跃国家名称 |
+| 节点分类 | `src/analysis/` | 将节点按落地/非落地、所属国家/地区、低价节点、WARP 与 Global 家宽节点和 Tailscale 类型分类；按阈值提取活跃国家名称 |
 | 配置构建 | `src/builders/` + `src/catalog/` | 先生成基础代理选择列表 (`BaseLists`)，再按声明式目录生成服务组、条件组、国家/地区组和 Tailscale 组 |
 | 最终组装 | `src/main.ts` + `src/builders/config.ts` | 将原始节点、代理组、规则、Rule Provider、DNS、TUN、Geo 数据源及必要的上游字段拼装为最终 `ClashConfig` |
 
@@ -72,8 +72,9 @@ flowchart TD
 | `src/catalog/dns.ts` | DNS 默认服务器与 fake-ip 过滤域名 | `DEFAULT_NAMESERVERS`, `DEFAULT_FALLBACK_DNS`, `FAKE_IP_FILTER` |
 | `src/catalog/icons.ts` | 代理组图标集中定义 | `ICONS` |
 | `src/catalog/group-names.ts` | 代理组名称与命名辅助 | `PROXY_GROUPS`, `NODE_SUFFIX`, `countryGroupName()` |
-| `src/catalog/countries.ts` | 国家/地区元数据；派生匹配正则 | `countriesMeta`, `countryRegexMap`, `countryExcludeRegexMap` |
+| `src/catalog/countries.ts` | 国家/地区元数据；派生匹配正则与国旗映射 | `countriesMeta`, `countryRegexMap`, `countryExcludeRegexMap`, `countryFlagMap` |
 | `src/catalog/low-cost.ts` | 低倍率节点匹配器 | `LOW_COST_NODE_MATCHER` |
+| `src/catalog/exit-floating.ts` | 出口地区可切换的节点（WARP、Global 家宽）的匹配器 | `WARP_NODE_MATCHER`, `GLOBAL_RESIDENTIAL_NODE_MATCHER` |
 | `src/catalog/service-groups.ts` | 服务代理组的声明式目录 | `serviceGroups` |
 | `src/catalog/rule-sets.ts` | Rule Provider 注册表（强类型键） | `ruleSets`, `RuleSetKey`, `ruleSet()` |
 | `src/analysis/classify.ts` | 节点多维度分类 | `analyzeNodes()` |
@@ -117,16 +118,19 @@ flowchart TD
 
 ### 节点分类
 
-节点在进入配置构建阶段前，由 `analyzeNodes()` 经过四个独立维度的分类，产出一个 `NodeAnalysis`：
+节点在进入配置构建阶段前，由 `analyzeNodes()` 经过五个维度的分类，产出一个 `NodeAnalysis`：
 
 1. **落地/非落地** — 决定节点归属的代理组类型。当 `landing = true` 时，后续的国家和低价节点分类只扫描非落地节点（即落地节点不参与按国家分发）。
-2. **国家/地区** — 通过正则匹配节点名称中的地理位置关键字，将节点归入对应的国家/地区分组。匹配规则定义在 `countriesMeta` 中。
+2. **国家/地区** — 节点名称以国旗 emoji 开头时只按国旗归类，国旗到地区的映射 `countryFlagMap` 从 `countriesMeta` 各地区 `pattern` 中出现的国旗提取；国旗不在映射中的节点不归入任何地区。名称没有国旗时，按 `countriesMeta` 的正则顺序取第一个命中的地区，并排除误匹配。国旗规则只作用于脚本侧枚举，`regex=true` 时地区组由 Mihomo 按 `pattern` 筛选。
 3. **低价节点** — 匹配特定正则 (`LOW_COST_NODE_MATCHER`) 的节点归入低价策略组，供用户按需选用。
-4. **Tailscale** — `type: "tailscale"` 的节点单独归入 Tailscale 代理组；只有检测到此类节点时才生成该组及对应的规则。该组默认 `hidden: true`，且 Tailscale 节点不参与国家/低价分类与常规候选列表。
+4. **WARP 与 Global 家宽** — 名称匹配 `WARP_NODE_MATCHER`（含 `warp`/`cloudflare`）或 `GLOBAL_RESIDENTIAL_NODE_MATCHER`（以 `🌐` 开头）的节点出口地区可切换，分别归入「WARP节点」与「Global家宽」组，两者都命中时归 WARP。它们先于国家和低价分类被剔除，不进入地区组与低倍率组；`regex=true` 时通过 `exclude-filter` 实现同样的排除。两个组固定为 `select`，只在有对应节点或 `regex=true` 时生成。展平模式下这些节点仍作为普通非落地节点直接进入上层代理组。
+5. **Tailscale** — `type: "tailscale"` 的节点单独归入 Tailscale 代理组；只有检测到此类节点时才生成该组及对应的规则。该组默认 `hidden: true`，且 Tailscale 节点不参与国家/低价分类与常规候选列表。
 
-这些分类维度相互独立，构建阶段通过组合它们来生成完整的代理组树。
+除第 4 类会从国家和低价分类中剔除外，这些分类维度相互独立，构建阶段通过组合它们来生成完整的代理组树。
 
 分类结果还会派生 `regionLayout`：通过 `threshold` 的地区数 ≥ 2 时为 `grouped`，为每个地区生成 `${地区}节点` 组，并保留「手动选择」组；不足 2 个时为 `flattened`，不生成任何地区组，`选择代理`、`自动选择`、`故障转移` 直接引用非落地节点（不含 Tailscale），同时不再生成与 `选择代理` 高度重合的「手动选择」组。服务组同样按 `regionLayout.groupedCountries` 判断目标地区组是否存在，避免引用已展平的地区组；展平模式下服务组的 `defaultProxies` / `defaultProxiesDirect` 也不再引用 `选择代理`，而是直接携带同一份展平节点来源。若存在「低倍率节点」组，「静态资源」组会将其置于候选首位，其余候选保持正常顺序。
+
+`catalog/service-groups.ts` 中声明了 `includeAll` 的服务组，只在 `grouped` 时附加 `include-all: true`，与 `regex` 无关，让用户能在服务组里直接选具体节点。`flattened` 时候选已经逐个列出全部节点（`regex=true` 时由展平节点来源自带 `include-all`），再附加会让 Mihomo 把节点重复追加一遍，因此不附加。
 
 ### Tailscale 集成
 
@@ -138,6 +142,17 @@ flowchart TD
 - Tailscale 存在时不排除对应地址段，使其能够交由 Tailscale 代理组处理；不存在时则排除这些地址段，避免无效的路由进入 TUN。
 
 没有 Tailscale 节点时，上述代理组和分流规则不会生成；TUN 仍输出统一的基础配置，并额外排除 Tailscale 地址段与局域网地址段。
+
+### 规则顺序
+
+`buildRules()` 按数组顺序输出规则，Mihomo 按顺序取第一条命中的规则，因此以下先后关系是有意安排的：
+
+1. QUIC 拦截（`quic=false` 时生成）。
+2. 「Antigravity」的域名规则。它与 `category-ai-!cn` 有重叠，必须排在 AI 规则之前。
+3. 「AI服务」：`GEOSITE,category-ai-!cn`、geosite 未收录的补充域名、Anthropic 的 IP 段，`asn=true` 时再追加 `IP-ASN` 规则。AI 规则先于其他所有分流，其他规则出问题时不影响 AI 连接。
+4. Tailscale 规则（有 Tailscale 节点时生成）、SSH 的 `DST-PORT,22`，之后才是 `GEOIP,private,DIRECT`。
+5. 去广告、搜狗输入法、Truth Social 之后，`SteamFix`（固定 `DIRECT`）先于「游戏下载」，「Twitter静态资源」先于 `StaticResources` 等静态资源规则集，因为后者也包含这些域名。
+6. 其余服务分流与兜底规则。
 
 ### 数据流
 
@@ -152,7 +167,7 @@ flowchart TD
 - `grouptype=1`（`url-test`）；若未指定 `grouptype`，仍兼容旧的 `loadbalance` 参数；
 - `fakeip=true`；
 - `threshold=2`，少于两个节点的地区不会生成地区组；过滤后不足 2 个地区时整体展平；
-- `ipv6`、`full`、`keepalive`、`quic`、`regex`、`tun` 默认关闭。
+- `ipv6`、`full`、`keepalive`、`quic`、`regex`、`tun`、`asn` 默认关闭。
 
 布尔参数接受 `true`/`false` 和 `1`/`0` 形式。
 

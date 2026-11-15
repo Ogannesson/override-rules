@@ -63,9 +63,10 @@
 *   `fakeip`：DNS 增强模式使用 `fake-ip` 而不是 `redir-host`（开启后可能有助于解决 TUN 模式无法上网的问题；未传参时默认 `true`，显式传 `false` 时使用 `redir-host`）
 *   `quic`：允许 QUIC 流量（UDP 443，默认 false）[^quic]
 *   `regex`：各国家/地区代理组与分组模式下的「手动选择」组改用 `include-all` 模式，由 Mihomo 内核在运行时动态填充节点（地区组再附加正则 `filter`）；展平模式下的各服务组也直接使用同一套展平节点候选（`regex=true` 时为 `include-all`，并通过 `exclude-filter` 排除落地节点与 Tailscale 节点），而非在脚本执行时枚举节点名称（默认 false）[^regex]
-*   `tun`：启用 TUN 模式（gvisor 栈，自动配置路由排除地址与 DNS 劫持，默认 false）
+*   `tun`：启用 TUN 模式（gvisor 栈，自动配置路由排除地址与 DNS 劫持，默认 false）。不用 mips 栈，是因为 mihomo v1.19.31 以前的内核不认识这个取值，会让整份配置加载失败
 *   `threshold`：国家/地区节点数量小于该值时不显示分组（默认 2）；过滤后不足 2 个地区时自动展平，不再生成地区组
 *   `adblock`：去广告规则（0=关闭，1=adrules.top，2=217heidai，3=AWAvenue，默认 3）
+*   `asn`：为「AI服务」追加 `IP-ASN` 规则，覆盖 Anthropic, PBC 在 ARIN 名下的全部 5 个 ASN（399358、60808、4167、400243、401551），排在 Anthropic 的 IP 段规则之后（默认 false）。开启后客户端必须能下载 ASN 数据库（`GeoLite2-ASN.mmdb`），下载不到时整份配置加载失败。预生成的 YAML 覆写不包含这些规则
 
 > **向后兼容**：旧的 `loadbalance` 参数仍然可用。当 `grouptype` 未指定时，`loadbalance=true` 等价于 `grouptype=2`，`loadbalance=false` 等价于 `grouptype=1`。
 
@@ -98,15 +99,33 @@ https://raw.githubusercontent.com/powerfullz/override-rules/refs/heads/preview/c
 
 ### 关于部分特殊代理组的说明
 
+**服务分组可直接选节点**：分组模式下（达标地区不少于 2 个），除「搜狗输入法」外的所有服务分组，在「选择代理」、各地区分组、「手动选择」等原有选项之后，还会通过 `include-all` 直接列出订阅中的所有节点，因此每个服务分组都可以单独指定具体节点、互不影响。「手动选择」和各地区分组则由所有服务分组共用，在其中切换节点会同时影响所有选用它们的服务分组。展平模式下服务分组的候选本来就直接列出了节点，不再追加 `include-all`，避免同一个节点重复出现。
+
+**AI服务**：AI 相关规则排在最前面，只在 QUIC 拦截规则（`quic=false` 时生成）和「Antigravity」的规则之后，先于其他所有分流规则匹配，这样其他规则或代理组出问题时，AI 服务（包括各类 AI Agent）不会跟着失联。AI 域名的 QUIC 流量和其他域名一样被拒绝并退回 TCP。主规则 `GEOSITE,category-ai-!cn` 之后，还补了几条 geosite 没有收录的规则：`claude.app`（Claude Desktop 使用的域名）；`hcaptcha.com`、`challenges.cloudflare.com`、`arkoselabs.com`（Claude 与 ChatGPT 登录风控使用的人机验证，需要和 AI 服务走同一个出口）；以及 ARIN 直接分配给 Anthropic 的地址块 `160.79.104.0/21`、`153.61.0.0/16`、`2607:6bc0::/32`（兜底没有域名的连接）。需要按 ASN 匹配时见 `asn` 参数。
+
+**Antigravity**：分流 Google Antigravity 的流量，包括它调用各家模型的请求，这些请求都经 Google 的 Cloud Code 接口转发。这些接口有几个是和其他产品共用的，所以以下流量也会跟着进入本组：Gemini CLI、Gemini Code Assist、Android Studio 中的 Gemini，以及所有 Vertex AI 接口（`aiplatform.googleapis.com` 及其区域端点）和企业版接口（`businessaicode`、`discoveryengine`）。本组规则排在「AI服务」之前，否则会先被 AI 规则匹配走。默认跟随「AI服务」，需要时可以单独切换。
+
 **静态资源**：包含所有常见静态资源 CDN 域名、对象存储域名。大部分网站的静态资源（如图片、视频、音频、字体、JS、CSS）都有独立域名、不设置风控措施、不设置鉴权，这些静态资源可以使用 IP 不一定干净（例如 IDC 类 IP）、但是带宽更大、延时更低、而且有和大部分主流 CDN（如 Cloudflare、Akamai、Fastly、EdgeCast）在 IXP 有互联的网络出口。一般就实践经验来看，在正常上网中这部分域名产生的流量占据约 70% 左右。如果你在使用商业性质的远端策略服务提供商、且该服务上提供了低倍率节点，你可以将这部分域名分流至低倍率节点以节省流量。检测到「低倍率节点」组时，本组会自动将其置于候选首位，其余候选保持正常顺序。[^fn1]
 
 [^fn1]: 来源：[我有特别的 Surge 配置和使用技巧](https://blog.skk.moe/post/i-have-my-unique-surge-setup/)
 
+**Twitter静态资源**：Twitter 的图片、视频等静态资源域名（`twimg.com`、`assets.pscp.tv`、`cdn.cms-twdigitalassets.com`）。这些域名同时也在「静态资源」的规则集里，本组规则排在它前面，先把它们截住。默认跟随「静态资源」，也可以切到「Twitter」或其他出口。
+
+**游戏下载**：覆盖 geosite `category-game-platforms-download` 收录的游戏平台客户端更新和游戏下载域名（Steam、Epic Games、Battle.net 等）。默认使用 `DIRECT`，也可以切换到「静态资源」、其他策略组或具体节点。
+
+**金融服务**：默认走「选择代理」，候选顺序和其他服务分组一致，需要直连时手动切到 `DIRECT`。
+
+**SSH**：分流目标端口为 22 的连接，默认走「选择代理」。这条规则排在局域网直连规则之前，所以连接局域网主机的 SSH 也会进入本组。
+
 **搜狗输入**：默认放行，作用是避免搜狗输入法将你输入的每一个字符自动收集并通过`get.sogou.com/q`等域名回传。隐私担忧者可以将其设置为`REJECT`，开启后会影响搜狗输入法账号同步、词库更新、问题反馈，但语音输入等其他功能可以正常使用。
+
+**WARP节点 / Global家宽**：名称含 `warp` 或 `cloudflare`（不区分大小写）的节点归入「WARP节点」，名称以 `🌐` 开头的节点（多地区家宽）归入「Global家宽」，两者同时命中时归 WARP。这两类节点的出口地区可以切换，不固定在某个国家，因此不进入任何国家/地区分组和「低倍率节点」组，而是各自单独成组（固定为 `select`），并出现在「选择代理」和各服务分组的候选列表中。订阅中没有对应节点时不生成该组（`regex=true` 时始终生成）。
+
+**国家/地区归类**：节点名称以国旗 emoji 开头时，只按国旗确定地区。国旗代表实际出口，名称里的入口或中转关键字不参与判定，例如 `🇵🇭HKG->DITO` 归菲律宾、`🇨🇦Po0->US->Bell` 归加拿大。国旗不属于已支持的地区时，该节点不进入任何地区分组，仍可在「手动选择」等分组中选用。名称没有国旗时，仍按正则关键字匹配。按国旗归类只在默认的 `regex=false` 下生效；`regex=true` 和预生成的 YAML 覆写由 Mihomo 内核按正则筛选，同一节点可能同时进入多个地区分组。已支持的地区定义在 `src/catalog/countries.ts`，其中包括朝鲜（`🇰🇵`）。
 
 ~~**Play 商店修复**：~~ 修复国行设备因使用`services.googleapis.cn`域名导致的 Google Play 下载应用时的「等待中…」问题。详见：[「Google Play 商店的国内 CDN：从密码学入门到分流策略优化」](https://blog.l3zc.com/2025/03/chinese-cdn-used-by-playstore/)，已经是默认行为。
 
-~~**Steam 修复**：~~ 用于让 Steam 客户端调用国内 CDN 及 P2P 网络下载，节省大量流量，已经是默认行为。
+~~**Steam 修复**：~~ 用于让 Steam 客户端调用国内 CDN 及 P2P 网络下载，节省大量流量，已经是默认行为；相关域名优先于「游戏下载」匹配，固定使用 `DIRECT`。
 
 ### 关于链式代理的说明
 

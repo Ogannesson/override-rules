@@ -103,7 +103,7 @@ https://raw.githubusercontent.com/powerfullz/override-rules/refs/heads/preview/c
 
 **AI服务**：AI 相关规则排在最前面，只在 QUIC 拦截规则（`quic=false` 时生成）和「Antigravity」的规则之后，先于其他所有分流规则匹配，这样其他规则或代理组出问题时，AI 服务（包括各类 AI Agent）不会跟着失联。AI 域名的 QUIC 流量和其他域名一样被拒绝并退回 TCP。主规则 `GEOSITE,category-ai-!cn` 之后，还补了几条 geosite 没有收录的规则：`claude.app`（Claude Desktop 使用的域名）；`hcaptcha.com`、`challenges.cloudflare.com`、`arkoselabs.com`（Claude 与 ChatGPT 登录风控使用的人机验证，需要和 AI 服务走同一个出口）；以及 ARIN 直接分配给 Anthropic 的地址块 `160.79.104.0/21`、`153.61.0.0/16`、`2607:6bc0::/32`（兜底没有域名的连接）。需要按 ASN 匹配时见 `asn` 参数。
 
-**Antigravity**：分流 Google Antigravity 的流量，包括它调用各家模型的请求，这些请求都经 Google 的 Cloud Code 接口转发。这些接口有几个是和其他产品共用的，所以以下流量也会跟着进入本组：Gemini CLI、Gemini Code Assist、Android Studio 中的 Gemini，以及所有 Vertex AI 接口（`aiplatform.googleapis.com` 及其区域端点）和企业版接口（`businessaicode`、`discoveryengine`）。本组规则排在「AI服务」之前，否则会先被 AI 规则匹配走。默认跟随「AI服务」，需要时可以单独切换。
+**Antigravity**：分流 Google Antigravity 的流量，包括它调用各家模型的请求，这些请求都经 Google 的 Cloud Code 接口转发。这些接口有几个是和其他产品共用的，所以以下流量也会跟着进入本组：Gemini CLI、Gemini Code Assist、Android Studio 中的 Gemini，以及所有 Vertex AI 接口（`aiplatform.googleapis.com` 及其区域端点）和企业版接口（`businessaicode`、`discoveryengine`）。Gemini 网页版和 App 的对话也进本组（`gemini.google.com` 及 App 的对话后端），Chrome 里的 Gemini 侧边栏跟着走；但 Gemini 的上传、生成的图片和视频、语音、登录和人机验证用的是和其他 Google 产品共用的域名，拆不出来，仍走「谷歌服务」「静态资源」。本组和「谷歌服务」出口 IP 不同时，Gemini 偶尔会弹「异常流量」验证，要避免就让两组选同一地区的节点。本组规则排在「AI服务」之前，否则会先被 AI 规则匹配走。默认跟随「AI服务」，需要时可以单独切换。
 
 **静态资源**：包含所有常见静态资源 CDN 域名、对象存储域名。大部分网站的静态资源（如图片、视频、音频、字体、JS、CSS）都有独立域名、不设置风控措施、不设置鉴权，这些静态资源可以使用 IP 不一定干净（例如 IDC 类 IP）、但是带宽更大、延时更低、而且有和大部分主流 CDN（如 Cloudflare、Akamai、Fastly、EdgeCast）在 IXP 有互联的网络出口。一般就实践经验来看，在正常上网中这部分域名产生的流量占据约 70% 左右。如果你在使用商业性质的远端策略服务提供商、且该服务上提供了低倍率节点，你可以将这部分域名分流至低倍率节点以节省流量。检测到「低倍率节点」组时，本组会自动将其置于候选首位，其余候选保持正常顺序。[^fn1]
 

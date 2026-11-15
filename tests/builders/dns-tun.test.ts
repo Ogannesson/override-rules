@@ -138,4 +138,9 @@ describe("buildTunConfig", () => {
         assert.equal(tun.mtu, 9000);
         assert.equal(tun.enable, false);
     });
+
+    it("网络栈固定为 gvisor", () => {
+        assert.equal(buildTunConfig(true, false).stack, "gvisor");
+        assert.equal(buildTunConfig(false, true).stack, "gvisor");
+    });
 });

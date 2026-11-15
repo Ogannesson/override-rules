@@ -17,7 +17,8 @@ import type { TunConfig } from "../types/clash";
 export function buildTunConfig(tunEnabled: boolean, hasTailscale: boolean): TunConfig {
     return {
         enable: tunEnabled,
-        stack: "mips",
+        // 旧版 mihomo 内核不认识 mips 等新取值，会让整份配置加载失败，固定用 gvisor
+        stack: "gvisor",
         device: "mihomo",
         "route-exclude-address": [
             !hasTailscale ? "100.64.0.0/10" : null,

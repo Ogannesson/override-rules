@@ -24,4 +24,6 @@ export const ARG_DEFAULTS = {
     tunEnabled: false,
     /** 去广告规则来源：0=关闭，1=adrules.top，2=217heidai，3=AWAvenue。 */
     adblockSource: 3,
+    /** 为 AI服务 追加 Anthropic 的 IP-ASN 规则（依赖 ASN 数据库）。 */
+    asnEnabled: false,
 } as const;

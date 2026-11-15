@@ -72,6 +72,7 @@ export function assembleConfig(
             quicEnabled: flags.quicEnabled,
             hasTailscale: nodes.hasTailscale,
             adblockSource: flags.adblockSource,
+            asnEnabled: flags.asnEnabled,
         }),
         sniffer: snifferConfig,
         dns: buildDns({

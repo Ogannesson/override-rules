@@ -52,5 +52,6 @@ export function buildFeatureFlags(args: ScriptArgs): FeatureFlags {
         tunEnabled: parseBool(args.tun, ARG_DEFAULTS.tunEnabled),
         countryThreshold: parseNumber(args.threshold, ARG_DEFAULTS.countryThreshold),
         adblockSource: parseAdblockSource(args),
+        asnEnabled: parseBool(args.asn, ARG_DEFAULTS.asnEnabled),
     };
 }

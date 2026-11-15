@@ -381,6 +381,13 @@ describe("assembleConfig", () => {
         assert.equal(group(result, PROXY_GROUPS.TAILSCALE)?.hidden, true);
     });
 
+    it("asn 参数透传到规则构建", () => {
+        assert.ok(!(run({}, CONFIG).rules ?? []).some((rule) => rule.startsWith("IP-ASN,")));
+        assert.ok(
+            (run({ asn: "true" }, CONFIG).rules ?? []).includes("IP-ASN,399358,AI服务,no-resolve")
+        );
+    });
+
     it("引用同一份规则集与 Geo 数据源", () => {
         const result = run({}, CONFIG);
         const providers = result["rule-providers"] ?? {};

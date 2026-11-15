@@ -17,6 +17,14 @@ describe("buildFeatureFlags", () => {
         assert.equal(flags.regexFilter, ARG_DEFAULTS.regexFilter);
         assert.equal(flags.tunEnabled, ARG_DEFAULTS.tunEnabled);
         assert.equal(flags.adblockSource, ARG_DEFAULTS.adblockSource);
+        assert.equal(flags.asnEnabled, ARG_DEFAULTS.asnEnabled);
+    });
+
+    it("asn 默认关闭，显式开启时生效", () => {
+        assert.equal(buildFeatureFlags({}).asnEnabled, false);
+        assert.equal(buildFeatureFlags({ asn: "true" }).asnEnabled, true);
+        assert.equal(buildFeatureFlags({ asn: "1" }).asnEnabled, true);
+        assert.equal(buildFeatureFlags({ asn: "false" }).asnEnabled, false);
     });
 
     it("解析 grouptype 的合法取值", () => {

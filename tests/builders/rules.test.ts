@@ -267,18 +267,18 @@ describe("buildRules：Antigravity 与 AI服务 规则", () => {
 });
 
 describe("buildRules：SSH 与游戏下载规则", () => {
-    it("SSH 端口规则位于 Tailscale 规则之后、局域网直连之前", () => {
+    it("SSH 端口规则紧跟局域网直连之后，局域网直连紧跟 Tailscale 规则", () => {
         const rules = rulesWith();
         const ssh = rules.indexOf("DST-PORT,22,SSH");
-        assert.equal(rules[ssh - 1], "DOMAIN-SUFFIX,ts.net,Tailscale");
-        assert.equal(rules[ssh + 1], "GEOIP,private,DIRECT,no-resolve");
+        assert.equal(rules[ssh - 1], "GEOIP,private,DIRECT,no-resolve");
+        assert.equal(rules[ssh - 2], "DOMAIN-SUFFIX,ts.net,Tailscale");
     });
 
-    it("无 Tailscale 时 SSH 端口规则仍在局域网直连之前", () => {
+    it("无 Tailscale 时 SSH 端口规则仍紧跟局域网直连之后", () => {
         const rules = rulesWith({ hasTailscale: false });
         const ssh = rules.indexOf("DST-PORT,22,SSH");
         assert.ok(ssh > 0);
-        assert.equal(rules[ssh + 1], "GEOIP,private,DIRECT,no-resolve");
+        assert.equal(rules[ssh - 1], "GEOIP,private,DIRECT,no-resolve");
     });
 
     it("SteamFix 与游戏下载位于静态资源之前", () => {

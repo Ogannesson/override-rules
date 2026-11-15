@@ -150,7 +150,7 @@ flowchart TD
 1. QUIC 拦截（`quic=false` 时生成）。
 2. 「Antigravity」的域名规则。它与 `category-ai-!cn` 有重叠，必须排在 AI 规则之前。
 3. 「AI服务」：`GEOSITE,category-ai-!cn`、geosite 未收录的补充域名、Anthropic 的 IP 段，`asn=true` 时再追加 `IP-ASN` 规则。AI 规则先于其他所有分流，其他规则出问题时不影响 AI 连接。
-4. Tailscale 规则（有 Tailscale 节点时生成）、SSH 的 `DST-PORT,22`，之后才是 `GEOIP,private,DIRECT`。
+4. Tailscale 规则（有 Tailscale 节点时生成）、`GEOIP,private,DIRECT`，之后才是 SSH 的 `DST-PORT,22`，内网主机的 SSH 因此直连。
 5. 去广告、搜狗输入法、Truth Social 之后，`SteamFix`（固定 `DIRECT`）先于「游戏下载」，「Twitter静态资源」先于 `StaticResources` 等静态资源规则集，因为后者也包含这些域名。
 6. 其余服务分流与兜底规则。
 

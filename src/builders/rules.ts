@@ -74,8 +74,9 @@ export function buildRules({
         hasTailscale ? `IP-CIDR,100.64.0.0/10,${PROXY_GROUPS.TAILSCALE},no-resolve` : null,
         hasTailscale ? `IP-CIDR,fd7a:115c:a1e0::/48,${PROXY_GROUPS.TAILSCALE},no-resolve` : null,
         hasTailscale ? `DOMAIN-SUFFIX,ts.net,${PROXY_GROUPS.TAILSCALE}` : null,
-        `DST-PORT,22,${PROXY_GROUPS.SSH}`,
         `GEOIP,private,DIRECT,no-resolve`,
+        // 排在局域网直连之后：内网主机的 SSH 直连，只有外部主机的 SSH 进 SSH 组
+        `DST-PORT,22,${PROXY_GROUPS.SSH}`,
         adblockSource > 0 ? ruleSet("ADBlock", PROXY_GROUPS.AD_BLOCK) : null,
         adblockSource > 0 ? ruleSet("AdditionalFilter", PROXY_GROUPS.AD_BLOCK) : null,
         ruleSet("SogouInput", PROXY_GROUPS.SOGOU_INPUT),

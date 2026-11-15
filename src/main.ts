@@ -19,7 +19,7 @@ https://github.com/powerfullz/override-rules
 
 WARP 出口分组：自动识别名称含 warp/cloudflare 的节点并单独成组（挂到各服务分组候选），无需传参。
 Global家宽分组：名称以 🌐 开头的多地区家宽节点同样单独成组，不进地区分组。
-Antigravity 分组：Antigravity 及共用 Cloud Code 接口的 Gemini CLI / Code Assist、Vertex AI 流量单独分流，默认跟随 AI服务。
+Antigravity 分组：Antigravity 及共用 Cloud Code 接口的 Gemini CLI / Code Assist、Vertex AI 流量，以及 Gemini 网页版和 App 的对话单独分流，默认跟随 AI服务。
 Twitter静态资源分组：twimg 等 Twitter 静态域名单独分流，默认跟随静态资源。
 地区归类：节点名称以国旗开头时只按国旗归入对应地区，未知国旗不归入任何地区（仅枚举模式；regex 模式仍按正则匹配）。
 

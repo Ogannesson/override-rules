@@ -53,6 +53,18 @@ export function buildRules({
         `DOMAIN-REGEX,^businessaicode(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$,${PROXY_GROUPS.ANTIGRAVITY}`,
         `DOMAIN-REGEX,^([a-z0-9-]+-)?aiplatform(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$,${PROXY_GROUPS.ANTIGRAVITY}`,
         `DOMAIN-REGEX,^((us|eu)-)?discoveryengine(\\.mtls)?\\.googleapis\\.com$,${PROXY_GROUPS.ANTIGRAVITY}`,
+        // Gemini 网页版与 App 的对话主机。只收 Gemini 专用主机：上传、生成的图片视频、语音、
+        // 登录、人机验证用的是和其他 Google 产品共用的主机，拆不出来，仍走谷歌服务、静态资源组
+        `DOMAIN-SUFFIX,gemini.google.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-SUFFIX,gemini.google,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-SUFFIX,bard.google.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-SUFFIX,gemini.gstatic.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-REGEX,^geminiweb-pa\\.(clients6?\\.google|googleapis)\\.com$,${PROXY_GROUPS.ANTIGRAVITY}`,
+        // App 的对话后端；webchannel- 是 iOS 用的，geosite 未收录
+        `DOMAIN-REGEX,^(webchannel-)?robinfrontend-pa(\\.mtls)?\\.googleapis\\.com$,${PROXY_GROUPS.ANTIGRAVITY}`,
+        // App 查询能否使用 Gemini 的接口，与 Google App 的后台同步共用，随对话同出口
+        `DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-SUFFIX,geller-pa.googleapis.com,${PROXY_GROUPS.ANTIGRAVITY}`,
         // AI 服务紧随其后，先于其它所有分流，避免其它规则出问题时 AI 连接受牵连；
         // AI 域名的 QUIC 仍被拒绝、退回 TCP
         `GEOSITE,category-ai-!cn,${PROXY_GROUPS.AI_SERVICE}`,

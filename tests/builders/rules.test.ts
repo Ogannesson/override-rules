@@ -28,6 +28,14 @@ const ANTIGRAVITY_RULES = [
     "DOMAIN-REGEX,^businessaicode(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$,Antigravity",
     "DOMAIN-REGEX,^([a-z0-9-]+-)?aiplatform(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$,Antigravity",
     "DOMAIN-REGEX,^((us|eu)-)?discoveryengine(\\.mtls)?\\.googleapis\\.com$,Antigravity",
+    "DOMAIN-SUFFIX,gemini.google.com,Antigravity",
+    "DOMAIN-SUFFIX,gemini.google,Antigravity",
+    "DOMAIN-SUFFIX,bard.google.com,Antigravity",
+    "DOMAIN-SUFFIX,gemini.gstatic.com,Antigravity",
+    "DOMAIN-REGEX,^geminiweb-pa\\.(clients6?\\.google|googleapis)\\.com$,Antigravity",
+    "DOMAIN-REGEX,^(webchannel-)?robinfrontend-pa(\\.mtls)?\\.googleapis\\.com$,Antigravity",
+    "DOMAIN-SUFFIX,proactivebackend-pa.googleapis.com,Antigravity",
+    "DOMAIN-SUFFIX,geller-pa.googleapis.com,Antigravity",
 ];
 
 const AI_HEAD_RULES = [
@@ -109,6 +117,33 @@ const DOMAIN_REGEX_CASES: Record<string, { match: string[]; noMatch: string[] }>
             "xdiscoveryengine.googleapis.com",
             "discoveryengine.googleapis.com.evil.com",
             "foo.discoveryengine.googleapis.com",
+        ],
+    },
+    "^geminiweb-pa\\.(clients6?\\.google|googleapis)\\.com$": {
+        match: [
+            "geminiweb-pa.clients6.google.com",
+            "geminiweb-pa.clients.google.com",
+            "geminiweb-pa.googleapis.com",
+        ],
+        noMatch: [
+            "geminiweb-pa.clients5.google.com",
+            "xgeminiweb-pa.googleapis.com",
+            "geminiweb-pa.googleapis.com.evil.com",
+            "geminiweb-paxgoogleapis.com",
+        ],
+    },
+    "^(webchannel-)?robinfrontend-pa(\\.mtls)?\\.googleapis\\.com$": {
+        match: [
+            "robinfrontend-pa.googleapis.com",
+            "webchannel-robinfrontend-pa.googleapis.com",
+            "robinfrontend-pa.mtls.googleapis.com",
+            "webchannel-robinfrontend-pa.mtls.googleapis.com",
+        ],
+        noMatch: [
+            "robin-proactivebackend-pa.googleapis.com",
+            "xrobinfrontend-pa.googleapis.com",
+            "robinfrontend-pa.googleapis.com.evil.com",
+            "robinfrontend-paxgoogleapis.com",
         ],
     },
 };
@@ -243,6 +278,42 @@ describe("buildRules：Antigravity 与 AI服务 规则", () => {
     it("geosite 的 AI 规则只出现一次", () => {
         const rules = rulesWith();
         assert.equal(rules.filter((rule) => rule === "GEOSITE,category-ai-!cn,AI服务").length, 1);
+    });
+
+    it("Gemini 的对话主机进 Antigravity，共用的 Google 主机不进", () => {
+        // 按 Mihomo 的语义模拟域名规则匹配
+        const matches = (rule: string, host: string): boolean => {
+            const [type, value] = rule.split(",");
+            if (type === "DOMAIN") return host === value;
+            if (type === "DOMAIN-SUFFIX") return host === value || host.endsWith(`.${value}`);
+            if (type === "DOMAIN-REGEX") return new RegExp(value).test(host);
+            return false;
+        };
+        const antigravity = rulesWith().filter((rule) => rule.endsWith(",Antigravity"));
+        const hits = (host: string) => antigravity.some((rule) => matches(rule, host));
+        for (const host of [
+            "gemini.google.com",
+            "geminiweb-pa.googleapis.com",
+            "geminiweb-pa.clients6.google.com",
+            "robinfrontend-pa.googleapis.com",
+            "webchannel-robinfrontend-pa.googleapis.com",
+            "robinfrontend-pa.mtls.googleapis.com",
+            "proactivebackend-pa.googleapis.com",
+        ]) {
+            assert.ok(hits(host), host);
+        }
+        for (const host of [
+            "www.google.com",
+            "accounts.google.com",
+            "apis.google.com",
+            "play.google.com",
+            "www.gstatic.com",
+            "lh3.googleusercontent.com",
+            "www.googleapis.com",
+            "generativelanguage.googleapis.com",
+        ]) {
+            assert.ok(!hits(host), host);
+        }
     });
 
     it("AI服务 不再包含 aiplatform 规则", () => {

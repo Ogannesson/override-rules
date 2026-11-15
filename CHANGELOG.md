@@ -1,5 +1,167 @@
 # Changelog
 
+## [2.10.1](https://github.com/powerfullz/override-rules/compare/src-v2.10.0...src-v2.10.1) (2026-11-08)
+
+
+### Bug Fixes
+
+- Adjust default adblock source ([670a0fe](https://github.com/powerfullz/override-rules/commit/670a0fe563b4932e712e7a297d83fb4c7c6eb222))
+
+
+### Documentation
+
+- Document code quality tooling in AGENTS.md ([74b198f](https://github.com/powerfullz/override-rules/commit/74b198f6a73e51efa3fb44323a74522153210348))
+- Update docs ([96f25ee](https://github.com/powerfullz/override-rules/commit/96f25eee62151540fc81886e0d84cd2e79074290))
+- Rewrite `AGENTS.md` ([31c0dc3](https://github.com/powerfullz/override-rules/commit/31c0dc3c7871881c281025d070ff7752eab68e40))
+
+
+### Features
+
+- Add code quality analysis toolchain ([5f346e5](https://github.com/powerfullz/override-rules/commit/5f346e5f3e22d6ccf2f95a420fe26ec7370f379b))
+
+
+### Refactoring
+
+- Fix issues surfaced by static analysis ([9b5aa25](https://github.com/powerfullz/override-rules/commit/9b5aa25a6048e86383fd9c41bf75ea66b85f64da))
+
+
+### Testing
+
+- Pin explicit adblock=0 in config tests ([d6821a1](https://github.com/powerfullz/override-rules/commit/d6821a14cc556a7fc19aca5c08d336c67f6dcb18))
+## [2.10.0](https://github.com/powerfullz/override-rules/compare/src-v2.9.3...src-v2.10.0) (2026-11-05)
+
+
+### Bug Fixes
+
+- 删除 GoogleFCM 相关规则 ([757d8af](https://github.com/powerfullz/override-rules/commit/757d8af57a7e810ff32391e295fd3cea0d7ca023))
+- Adblock=0 时隐藏广告拦截组 ([f24f27f](https://github.com/powerfullz/override-rules/commit/f24f27f20f402f0ab88faf02612572381263537a))
+- 修改`force-dns-mapping`为 `false` ([45e3e77](https://github.com/powerfullz/override-rules/commit/45e3e77e6e9a03a7198f6e7d749ce9c54b989d7d))
+
+
+### Features
+
+- 新增 `adblock` 参数并修复非 regex 模式下服务组 include-all 问题 ([e12b452](https://github.com/powerfullz/override-rules/commit/e12b4526baacea44edb1f69b0c8a36a185ee6ab6))
+
+
+### Refactoring
+
+- 将所有参数默认值显式集中到 schema.ts ([78f7b95](https://github.com/powerfullz/override-rules/commit/78f7b95edcc655ddecf36fa61ef05fee8d848fa5))
+- 将 adblock 选项目命名为 adblockSource ([ee2d1f8](https://github.com/powerfullz/override-rules/commit/ee2d1f8a9475ac79c9f305e83b249fb5d2dc16a7))
+- 统一使用 ADBlock 规则集名称，按 adblock 级别替换下载源 ([e796fec](https://github.com/powerfullz/override-rules/commit/e796fecb12f7cde7dd1cfeb1fd6f644610889b6f))
+- 简化 adblock 规则组装逻辑 ([34171bd](https://github.com/powerfullz/override-rules/commit/34171bd98757f3e4b546026c0c0f605d3fa54d4b))
+## [2.9.3](https://github.com/powerfullz/override-rules/compare/src-v2.9.2...src-v2.9.3) (2026-11-05)
+
+
+### Bug Fixes
+
+- 继承上游 dns.listen 以保留本地 DNS 监听 ([b9ad42b](https://github.com/powerfullz/override-rules/commit/b9ad42b1d2e47bb379823b7ac7db30644a245c82))
+
+
+### Features
+
+- 将 mtu 默认改为 9000 ([a21d26c](https://github.com/powerfullz/override-rules/commit/a21d26cb6a8f069648335d629f9e05baea12732c))
+## [2.9.2](https://github.com/powerfullz/override-rules/compare/src-v2.9.1...src-v2.9.2) (2026-11-03)
+
+
+### Refactoring
+
+- 重构 DNS 构建与上游字段继承 ([9a8e739](https://github.com/powerfullz/override-rules/commit/9a8e7395d4a5eff8b00c68f7a1dd6f46e50af582))
+## [2.9.1](https://github.com/powerfullz/override-rules/compare/src-v2.9.0...src-v2.9.1) (2026-10-25)
+
+
+### Features
+
+- Tailscale 代理组现在会自动隐藏 ([360ac8f](https://github.com/powerfullz/override-rules/commit/360ac8fa02e805a638c362648ccb27831fe73921))
+- Tun模式默认网络栈采用 mips ([193be43](https://github.com/powerfullz/override-rules/commit/193be43f8fd12f707401782090202abe76e77038))
+## [2.9.0](https://github.com/powerfullz/override-rules/compare/src-v2.8.2...src-v2.9.0) (2026-10-25)
+
+
+### Bug Fixes
+
+- 空代理组候选统一回退 DIRECT ([a4e3407](https://github.com/powerfullz/override-rules/commit/a4e34078909c341b6d5fd9702a7cd910d4d8c8cd))
+
+
+### Chores
+
+- Use a more intuitive name for `selectors.ts` ([a3d2000](https://github.com/powerfullz/override-rules/commit/a3d20005abd9379c9360290fc300fd078df3fbc1))
+
+
+### Documentation
+
+- Update docs ([a161662](https://github.com/powerfullz/override-rules/commit/a161662b6c8aa5aafddb5985078f39ade5531a2b))
+- 同步静态资源组低倍率优先说明 ([131c1d1](https://github.com/powerfullz/override-rules/commit/131c1d14a6f4aa72bfa2f6398ed22c10e515d5d1))
+- 同步服务组扁平化说明 ([2c20198](https://github.com/powerfullz/override-rules/commit/2c20198dc41842839f41f866f8d5e3564f440c2c))
+- 同步展平模式手动选择组说明 ([044a25a](https://github.com/powerfullz/override-rules/commit/044a25ac130f5ce4f9cdd244c6cdebe7d4a0e40c))
+- 说明空代理组兜底行为 ([81d4920](https://github.com/powerfullz/override-rules/commit/81d4920d840c5ab094be8eea6448b82788fcec27))
+
+
+### Features
+
+- 静态资源组优先使用低倍率节点 ([8c5a40b](https://github.com/powerfullz/override-rules/commit/8c5a40b519d896cba1f4578c81459aed650b4516))
+- 展平模式下服务组直接使用节点候选 ([7f6adc2](https://github.com/powerfullz/override-rules/commit/7f6adc21f9c74e5b30e9a7f4b75711421f93605f))
+- 展平模式移除手动选择组 ([209bcf6](https://github.com/powerfullz/override-rules/commit/209bcf6f38cdbc352be7e1995794eb47e64bb9ad))
+
+
+### Other
+
+- 合并主线并保留代理组兜底决策 ([afe2e89](https://github.com/powerfullz/override-rules/commit/afe2e89438f152a25f5b392f51c66f2ca5414ba0))
+## [2.8.2](https://github.com/powerfullz/override-rules/compare/src-v2.8.1...src-v2.8.2) (2026-10-21)
+
+
+### Bug Fixes
+
+- 静态 YAML 的手动选择组改用 include-all ([5dbf0dd](https://github.com/powerfullz/override-rules/commit/5dbf0ddd993c427945121410bb0168609d179430))
+
+
+### Documentation
+
+- 同步 regex 模式对「手动选择」组的说明 ([b6f16e2](https://github.com/powerfullz/override-rules/commit/b6f16e24a08782bbae3f1e7fc92bd400d8740e15))
+## [2.8.1](https://github.com/powerfullz/override-rules/compare/src-v2.8.0...src-v2.8.1) (2026-10-21)
+
+
+### Bug Fixes
+
+- Correct the logic of the previous fix ([cdaa300](https://github.com/powerfullz/override-rules/commit/cdaa300af461954fe21998fa076658915b244499))
+- DIRECT and manual proxy group now only show up when no country groups are available ([f9c1aa9](https://github.com/powerfullz/override-rules/commit/f9c1aa998f028eb30e22b96d9c2e69f4212dc740))
+
+
+### Chores
+
+- Add `.editorconfig` ([9a78daa](https://github.com/powerfullz/override-rules/commit/9a78daa6d70aaf81bec81b9ae1294727a22716ad))
+- 去除 AI Sop 词语 ([8cc4db8](https://github.com/powerfullz/override-rules/commit/8cc4db81f5507c2fb09503b87df661633f6a2ab7))
+
+
+### Documentation
+
+- 同步地区组展平行为说明 ([bbd556d](https://github.com/powerfullz/override-rules/commit/bbd556d0566559da669499ec0e878aa7440a76e5))
+- 定稿地区组展平方案 (issue #64) ([7e96280](https://github.com/powerfullz/override-rules/commit/7e96280caa1542afb50121b6d6b994dd214e90b0))
+
+
+### Features
+
+- 展平不足两个地区的代理组结构 ([e59519d](https://github.com/powerfullz/override-rules/commit/e59519dfe20ccad351a2bd1003a73beb7b542b02))
+## [2.8.0](https://github.com/powerfullz/override-rules/compare/src-v2.7.6...src-v2.8.0) (2026-10-20)
+
+
+### Bug Fixes
+
+- 修复无地区组时 fallback 空 proxies 导致的启动报错 ([0e85728](https://github.com/powerfullz/override-rules/commit/0e857289b9e4e5caa410231d1ba40af1f82477bc))
+
+
+### Documentation
+
+- 添加地区组展平优化草案 (issue #64) ([411920e](https://github.com/powerfullz/override-rules/commit/411920e78f895dd74e123db7a0b66c4966134f16))
+- 同步模块化重构后的结构说明 ([22ea62b](https://github.com/powerfullz/override-rules/commit/22ea62bc805dc4341eb7f7e0daee47c52f9153a3))
+
+
+### Refactoring
+
+- 重构 src 为分层模块化结构并统一命名为 Clash ([ca26023](https://github.com/powerfullz/override-rules/commit/ca260233409049d48e9b12ffa8b729f3ab905cca))
+
+
+### Testing
+
+- 添加核心逻辑单元测试 ([9902b55](https://github.com/powerfullz/override-rules/commit/9902b55a85edc20a59e15b41bf4cdaf83836b156))
 ## [2.7.6](https://github.com/powerfullz/override-rules/compare/src-v2.7.5...src-v2.7.6) (2026-09-16)
 
 

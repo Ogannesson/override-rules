@@ -86,10 +86,11 @@ describe("assembleConfig", () => {
 
         // 服务组也直接使用展平节点，不再引用「选择代理」。
         assert.deepEqual(group(result, PROXY_GROUPS.GOOGLE)?.proxies, ["NodeA", "NodeB", "DIRECT"]);
+        // fork：金融服务与其他服务组一样默认走代理，不默认直连。
         assert.deepEqual(group(result, PROXY_GROUPS.FINANCE)?.proxies, [
-            "DIRECT",
             "NodeA",
             "NodeB",
+            "DIRECT",
         ]);
         // 没有低倍率组时，静态资源组保持正常顺序。
         assert.deepEqual(group(result, PROXY_GROUPS.STATIC_RESOURCES)?.proxies, [
@@ -183,8 +184,8 @@ describe("assembleConfig", () => {
             "DIRECT",
         ]);
         assert.deepEqual(group(result, PROXY_GROUPS.FINANCE)?.proxies, [
-            "DIRECT",
             PROXY_GROUPS.LANDING,
+            "DIRECT",
         ]);
     });
 
@@ -213,9 +214,9 @@ describe("assembleConfig", () => {
         assert.equal(google?.["exclude-filter"], "^(?:落地A)$");
         assert.deepEqual(google?.proxies, [PROXY_GROUPS.LANDING, PROXY_GROUPS.LOW_COST, "DIRECT"]);
         assert.deepEqual(group(result, PROXY_GROUPS.FINANCE)?.proxies, [
-            "DIRECT",
             PROXY_GROUPS.LANDING,
             PROXY_GROUPS.LOW_COST,
+            "DIRECT",
         ]);
     });
 
@@ -379,6 +380,73 @@ describe("assembleConfig", () => {
         assert.equal(group(result, PROXY_GROUPS.SELECT)?.["exclude-filter"], expected);
         assert.equal(group(result, PROXY_GROUPS.GOOGLE)?.["exclude-filter"], expected);
         assert.equal(group(result, PROXY_GROUPS.TAILSCALE)?.hidden, true);
+    });
+
+    it("金融服务默认走选择代理", () => {
+        const result = run({}, CONFIG);
+        assert.deepEqual(group(result, PROXY_GROUPS.FINANCE)?.proxies, [
+            PROXY_GROUPS.SELECT,
+            "香港节点",
+            "美国节点",
+            PROXY_GROUPS.MANUAL,
+            "DIRECT",
+        ]);
+    });
+
+    it("游戏下载组默认直连，其次静态资源，再接常规候选", () => {
+        const result = run({}, CONFIG);
+        const game = group(result, PROXY_GROUPS.GAME_DOWNLOAD);
+        assert.equal(game?.type, "select");
+        assert.match(game?.icon ?? "", /\/Game\.png$/);
+        assert.deepEqual(game?.proxies, [
+            "DIRECT",
+            PROXY_GROUPS.STATIC_RESOURCES,
+            PROXY_GROUPS.SELECT,
+            "香港节点",
+            "美国节点",
+            PROXY_GROUPS.MANUAL,
+        ]);
+    });
+
+    it("SSH 组使用常规候选", () => {
+        const result = run({}, CONFIG);
+        const ssh = group(result, PROXY_GROUPS.SSH);
+        assert.equal(ssh?.type, "select");
+        assert.match(ssh?.icon ?? "", /\/Server\.png$/);
+        assert.deepEqual(ssh?.proxies, group(result, PROXY_GROUPS.GOOGLE)?.proxies);
+    });
+
+    it("游戏下载紧跟静态资源，SSH 紧跟搜狗输入法", () => {
+        const names = (run({}, CONFIG)["proxy-groups"] ?? []).map((item) => item.name);
+        const at = (name: string) => names.indexOf(name);
+        assert.equal(at(PROXY_GROUPS.GAME_DOWNLOAD), at(PROXY_GROUPS.STATIC_RESOURCES) + 1);
+        assert.equal(at(PROXY_GROUPS.AI_SERVICE), at(PROXY_GROUPS.GAME_DOWNLOAD) + 1);
+        assert.equal(at(PROXY_GROUPS.SSH), at(PROXY_GROUPS.SOGOU_INPUT) + 1);
+    });
+
+    it("规则引用的策略组都存在", () => {
+        const inputs: Array<[ScriptArgs, ClashConfig]> = [
+            [{}, CONFIG],
+            [{ regex: "true", asn: "true" }, CONFIG],
+            [{}, { proxies: [{ name: "NodeA" }, { name: "Tailscale出口", type: "tailscale" }] }],
+            [{ adblock: "0" }, { proxies: [] }],
+        ];
+        for (const [args, config] of inputs) {
+            const result = run(args, config);
+            const targets = new Set([
+                "DIRECT",
+                "REJECT",
+                ...(result["proxy-groups"] ?? []).map((item) => item.name),
+            ]);
+            for (const rule of result.rules ?? []) {
+                const target =
+                    rule
+                        .replace(/,no-resolve$/, "")
+                        .split(",")
+                        .at(-1) ?? "";
+                assert.ok(targets.has(target), `规则引用了不存在的策略组: ${rule}`);
+            }
+        }
     });
 
     it("asn 参数透传到规则构建", () => {

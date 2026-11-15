@@ -184,6 +184,35 @@ describe("buildRules：AI服务 规则", () => {
     });
 });
 
+describe("buildRules：SSH 与游戏下载规则", () => {
+    it("SSH 端口规则位于 Tailscale 规则之后、局域网直连之前", () => {
+        const rules = rulesWith();
+        const ssh = rules.indexOf("DST-PORT,22,SSH");
+        assert.equal(rules[ssh - 1], "DOMAIN-SUFFIX,ts.net,Tailscale");
+        assert.equal(rules[ssh + 1], "GEOIP,private,DIRECT,no-resolve");
+    });
+
+    it("无 Tailscale 时 SSH 端口规则仍在局域网直连之前", () => {
+        const rules = rulesWith({ hasTailscale: false });
+        const ssh = rules.indexOf("DST-PORT,22,SSH");
+        assert.ok(ssh > 0);
+        assert.equal(rules[ssh + 1], "GEOIP,private,DIRECT,no-resolve");
+    });
+
+    it("SteamFix 与游戏下载位于静态资源之前", () => {
+        const rules = rulesWith();
+        const steamFix = rules.indexOf("RULE-SET,SteamFix,DIRECT");
+        assert.equal(rules[steamFix - 1], "DOMAIN-SUFFIX,truthsocial.com,Truth Social");
+        assert.equal(rules[steamFix + 1], "GEOSITE,category-game-platforms-download,游戏下载");
+        assert.equal(rules[steamFix + 2], "RULE-SET,StaticResources,静态资源");
+        assert.equal(rules.filter((rule) => rule.includes("SteamFix")).length, 1);
+    });
+
+    it("不包含上游已删除的 GoogleFCM 规则", () => {
+        assert.ok(!rulesWith().some((rule) => rule.includes("GoogleFCM")));
+    });
+});
+
 describe("buildRules：DOMAIN-REGEX 规则", () => {
     const domainRegexRules = rulesWith({ asnEnabled: true }).filter((rule) =>
         rule.startsWith("DOMAIN-REGEX,")

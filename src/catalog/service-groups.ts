@@ -45,6 +45,16 @@ export const serviceGroups: ServiceGroupDef[] = [
         proxies: prioritizeLowCost,
     },
     {
+        name: PROXY_GROUPS.GAME_DOWNLOAD,
+        icon: ICONS.gameDownload,
+        // 游戏下载默认直连，其次走静态资源的出口
+        proxies: (ctx) => [
+            "DIRECT",
+            PROXY_GROUPS.STATIC_RESOURCES,
+            ...ctx.lists.defaultProxies.filter((candidate) => candidate !== "DIRECT"),
+        ],
+    },
+    {
         name: PROXY_GROUPS.AI_SERVICE,
         icon: ICONS.aiService,
         proxies: (ctx) => ctx.lists.defaultProxies,
@@ -57,7 +67,7 @@ export const serviceGroups: ServiceGroupDef[] = [
     {
         name: PROXY_GROUPS.FINANCE,
         icon: ICONS.finance,
-        proxies: (ctx) => ctx.lists.defaultProxiesDirect,
+        proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.APPLE,
@@ -179,5 +189,10 @@ export const serviceGroups: ServiceGroupDef[] = [
         name: PROXY_GROUPS.SOGOU_INPUT,
         icon: ICONS.sogouInput,
         proxies: () => ["DIRECT", "REJECT"],
+    },
+    {
+        name: PROXY_GROUPS.SSH,
+        icon: ICONS.ssh,
+        proxies: (ctx) => ctx.lists.defaultProxies,
     },
 ];

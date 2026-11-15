@@ -35,6 +35,34 @@ function group(config: ClashConfig, name: string): ProxyGroup | undefined {
     return config["proxy-groups"]?.find((item) => item.name === name);
 }
 
+/** 带 `includeAll` 的服务组（除搜狗输入法外的全部服务组）。 */
+const SERVICE_GROUP_NAMES = [
+    PROXY_GROUPS.STATIC_RESOURCES,
+    PROXY_GROUPS.GAME_DOWNLOAD,
+    PROXY_GROUPS.AI_SERVICE,
+    PROXY_GROUPS.CRYPTO,
+    PROXY_GROUPS.FINANCE,
+    PROXY_GROUPS.APPLE,
+    PROXY_GROUPS.GOOGLE,
+    PROXY_GROUPS.MICROSOFT,
+    PROXY_GROUPS.XBOX,
+    PROXY_GROUPS.GITHUB,
+    PROXY_GROUPS.BILIBILI,
+    PROXY_GROUPS.BAHAMUT,
+    PROXY_GROUPS.YOUTUBE,
+    PROXY_GROUPS.TWITCH,
+    PROXY_GROUPS.NETFLIX,
+    PROXY_GROUPS.TIKTOK,
+    PROXY_GROUPS.SPOTIFY,
+    PROXY_GROUPS.TELEGRAM,
+    PROXY_GROUPS.TWITTER,
+    PROXY_GROUPS.WEIBO,
+    PROXY_GROUPS.TRUTH_SOCIAL,
+    PROXY_GROUPS.EHENTAI,
+    PROXY_GROUPS.PIKPAK,
+    PROXY_GROUPS.SSH,
+];
+
 const CONFIG: ClashConfig = {
     proxies: [{ name: "香港01" }, { name: "香港02" }, { name: "美国01" }, { name: "美国02" }],
     hosts: { "example.com": ["1.2.3.4"] },
@@ -517,7 +545,7 @@ describe("assembleConfig", () => {
     });
 
     it("非 regex 模式下 Weibo 组同样使用 include-all", () => {
-        // fork：服务组不分模式始终 include-all，让用户能直接选具体节点。
+        // fork：分组模式下服务组不分 regex 始终 include-all，让用户能直接选具体节点。
         const result = run({}, CONFIG);
         const weibo = group(result, PROXY_GROUPS.WEIBO);
         assert.equal(weibo?.["include-all"], true);
@@ -525,41 +553,10 @@ describe("assembleConfig", () => {
         assert.ok((weibo?.proxies?.length ?? 0) > 0);
     });
 
-    it("服务组不分模式始终 include-all，搜狗输入法与尾部固定组除外", () => {
-        const serviceNames = [
-            PROXY_GROUPS.STATIC_RESOURCES,
-            PROXY_GROUPS.GAME_DOWNLOAD,
-            PROXY_GROUPS.AI_SERVICE,
-            PROXY_GROUPS.CRYPTO,
-            PROXY_GROUPS.FINANCE,
-            PROXY_GROUPS.APPLE,
-            PROXY_GROUPS.GOOGLE,
-            PROXY_GROUPS.MICROSOFT,
-            PROXY_GROUPS.XBOX,
-            PROXY_GROUPS.GITHUB,
-            PROXY_GROUPS.BILIBILI,
-            PROXY_GROUPS.BAHAMUT,
-            PROXY_GROUPS.YOUTUBE,
-            PROXY_GROUPS.TWITCH,
-            PROXY_GROUPS.NETFLIX,
-            PROXY_GROUPS.TIKTOK,
-            PROXY_GROUPS.SPOTIFY,
-            PROXY_GROUPS.TELEGRAM,
-            PROXY_GROUPS.TWITTER,
-            PROXY_GROUPS.WEIBO,
-            PROXY_GROUPS.TRUTH_SOCIAL,
-            PROXY_GROUPS.EHENTAI,
-            PROXY_GROUPS.PIKPAK,
-            PROXY_GROUPS.SSH,
-        ];
-        const cases: Array<[ScriptArgs, ClashConfig]> = [
-            [{}, CONFIG],
-            [{ regex: "true" }, CONFIG],
-            [{}, { proxies: [{ name: "NodeA" }, { name: "NodeB" }] }],
-        ];
-        for (const [args, config] of cases) {
-            const result = run(args, config);
-            for (const name of serviceNames) {
+    it("分组模式下服务组不分 regex 始终 include-all，搜狗输入法与尾部固定组除外", () => {
+        for (const args of [{}, { regex: "true" }]) {
+            const result = run(args, CONFIG);
+            for (const name of SERVICE_GROUP_NAMES) {
                 assert.equal(group(result, name)?.["include-all"], true, name);
             }
             for (const name of [
@@ -569,6 +566,24 @@ describe("assembleConfig", () => {
             ]) {
                 assert.equal(group(result, name)?.["include-all"], undefined, name);
             }
+        }
+    });
+
+    it("展平、非 regex 时服务组不开 include-all，节点不重复", () => {
+        const result = run({}, { proxies: [{ name: "NodeA" }, { name: "NodeB" }] });
+        for (const name of SERVICE_GROUP_NAMES) {
+            const item = group(result, name);
+            assert.equal(item?.["include-all"], undefined, name);
+            const proxies = item?.proxies ?? [];
+            assert.equal(new Set(proxies).size, proxies.length, `${name} 有重复候选`);
+            assert.ok(proxies.includes("NodeA") && proxies.includes("NodeB"), name);
+        }
+    });
+
+    it("展平 + regex 时服务组的 include-all 来自展平节点来源", () => {
+        const result = run({ regex: "true" }, { proxies: [{ name: "NodeA" }] });
+        for (const name of SERVICE_GROUP_NAMES) {
+            assert.equal(group(result, name)?.["include-all"], true, name);
         }
     });
 

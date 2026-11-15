@@ -60,10 +60,16 @@ function buildFrontGroups(ctx: GroupBuildContext): Array<ProxyGroup | null> {
     ];
 }
 
-/** 由声明式目录生成的服务代理组。 */
+/**
+ * 由声明式目录生成的服务代理组。
+ *
+ * `includeAll` 只在分组模式生效：展平模式下候选已逐个列出全部节点（regex 时自带 include-all
+ * 来源），再开 include-all 会让 mihomo 把节点重复追加一遍。
+ */
 function buildServiceGroups(ctx: GroupBuildContext): ProxyGroup[] {
+    const grouped = ctx.nodes.regionLayout.mode === "grouped";
     return serviceGroups.map((def) =>
-        selectGroup(def.name, def.icon, def.proxies(ctx), def.includeAll)
+        selectGroup(def.name, def.icon, def.proxies(ctx), def.includeAll && grouped)
     );
 }
 

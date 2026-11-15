@@ -15,7 +15,10 @@ export interface ServiceGroupDef {
     name: string;
     /** 代理组图标 URL。 */
     icon: string;
-    /** 是否附加 `include-all: true`（不分 regex 模式，让用户能在服务组里直接选具体节点）。 */
+    /**
+     * 是否附加 `include-all: true`，让用户能在服务组里直接选具体节点。
+     * 不分 regex 模式；展平模式下候选已直接列出节点，不再附加。
+     */
     includeAll?: boolean;
     /** 根据构建上下文返回候选代理列表。 */
     proxies: (ctx: GroupBuildContext) => ProxyGroupCandidate[];

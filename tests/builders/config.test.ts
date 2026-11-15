@@ -505,12 +505,60 @@ describe("assembleConfig", () => {
         assert.ok("AdditionalFilter" in providers);
     });
 
-    it("非 regex 模式下 Weibo 组不使用 include-all", () => {
+    it("非 regex 模式下 Weibo 组同样使用 include-all", () => {
+        // fork：服务组不分模式始终 include-all，让用户能直接选具体节点。
         const result = run({}, CONFIG);
         const weibo = group(result, PROXY_GROUPS.WEIBO);
-        assert.equal(weibo?.["include-all"], undefined);
+        assert.equal(weibo?.["include-all"], true);
         assert.ok(weibo?.proxies !== undefined);
         assert.ok((weibo?.proxies?.length ?? 0) > 0);
+    });
+
+    it("服务组不分模式始终 include-all，搜狗输入法与尾部固定组除外", () => {
+        const serviceNames = [
+            PROXY_GROUPS.STATIC_RESOURCES,
+            PROXY_GROUPS.GAME_DOWNLOAD,
+            PROXY_GROUPS.AI_SERVICE,
+            PROXY_GROUPS.CRYPTO,
+            PROXY_GROUPS.FINANCE,
+            PROXY_GROUPS.APPLE,
+            PROXY_GROUPS.GOOGLE,
+            PROXY_GROUPS.MICROSOFT,
+            PROXY_GROUPS.XBOX,
+            PROXY_GROUPS.GITHUB,
+            PROXY_GROUPS.BILIBILI,
+            PROXY_GROUPS.BAHAMUT,
+            PROXY_GROUPS.YOUTUBE,
+            PROXY_GROUPS.TWITCH,
+            PROXY_GROUPS.NETFLIX,
+            PROXY_GROUPS.TIKTOK,
+            PROXY_GROUPS.SPOTIFY,
+            PROXY_GROUPS.TELEGRAM,
+            PROXY_GROUPS.TWITTER,
+            PROXY_GROUPS.WEIBO,
+            PROXY_GROUPS.TRUTH_SOCIAL,
+            PROXY_GROUPS.EHENTAI,
+            PROXY_GROUPS.PIKPAK,
+            PROXY_GROUPS.SSH,
+        ];
+        const cases: Array<[ScriptArgs, ClashConfig]> = [
+            [{}, CONFIG],
+            [{ regex: "true" }, CONFIG],
+            [{}, { proxies: [{ name: "NodeA" }, { name: "NodeB" }] }],
+        ];
+        for (const [args, config] of cases) {
+            const result = run(args, config);
+            for (const name of serviceNames) {
+                assert.equal(group(result, name)?.["include-all"], true, name);
+            }
+            for (const name of [
+                PROXY_GROUPS.SOGOU_INPUT,
+                PROXY_GROUPS.AD_BLOCK,
+                PROXY_GROUPS.FINAL,
+            ]) {
+                assert.equal(group(result, name)?.["include-all"], undefined, name);
+            }
+        }
     });
 
     it("regex 模式下 Weibo 组使用 include-all", () => {

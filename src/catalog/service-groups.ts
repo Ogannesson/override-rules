@@ -15,7 +15,7 @@ export interface ServiceGroupDef {
     name: string;
     /** 代理组图标 URL。 */
     icon: string;
-    /** 是否附加 `include-all: true`。 */
+    /** 是否附加 `include-all: true`（不分 regex 模式，让用户能在服务组里直接选具体节点）。 */
     includeAll?: boolean;
     /** 根据构建上下文返回候选代理列表。 */
     proxies: (ctx: GroupBuildContext) => ProxyGroupCandidate[];
@@ -42,11 +42,13 @@ export const serviceGroups: ServiceGroupDef[] = [
     {
         name: PROXY_GROUPS.STATIC_RESOURCES,
         icon: ICONS.staticResources,
+        includeAll: true,
         proxies: prioritizeLowCost,
     },
     {
         name: PROXY_GROUPS.GAME_DOWNLOAD,
         icon: ICONS.gameDownload,
+        includeAll: true,
         // 游戏下载默认直连，其次走静态资源的出口
         proxies: (ctx) => [
             "DIRECT",
@@ -57,46 +59,55 @@ export const serviceGroups: ServiceGroupDef[] = [
     {
         name: PROXY_GROUPS.AI_SERVICE,
         icon: ICONS.aiService,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.CRYPTO,
         icon: ICONS.crypto,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.FINANCE,
         icon: ICONS.finance,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.APPLE,
         icon: ICONS.apple,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.GOOGLE,
         icon: ICONS.google,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.MICROSOFT,
         icon: ICONS.microsoft,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.XBOX,
         icon: ICONS.xbox,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.GITHUB,
         icon: ICONS.github,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.BILIBILI,
         icon: ICONS.bilibili,
+        includeAll: true,
         proxies: (ctx) => {
             const groupedCountries = ctx.nodes.regionLayout.groupedCountries;
             return groupedCountries.includes(COUNTRY_KEYS.taiwan) &&
@@ -112,6 +123,7 @@ export const serviceGroups: ServiceGroupDef[] = [
     {
         name: PROXY_GROUPS.BAHAMUT,
         icon: ICONS.bahamut,
+        includeAll: true,
         proxies: (ctx) =>
             ctx.nodes.regionLayout.groupedCountries.includes(COUNTRY_KEYS.taiwan)
                 ? [
@@ -125,36 +137,43 @@ export const serviceGroups: ServiceGroupDef[] = [
     {
         name: PROXY_GROUPS.YOUTUBE,
         icon: ICONS.youtube,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.TWITCH,
         icon: ICONS.twitch,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.NETFLIX,
         icon: ICONS.netflix,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.TIKTOK,
         icon: ICONS.tiktok,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.SPOTIFY,
         icon: ICONS.spotify,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.TELEGRAM,
         icon: ICONS.telegram,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.TWITTER,
         icon: ICONS.twitter,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
@@ -166,6 +185,7 @@ export const serviceGroups: ServiceGroupDef[] = [
     {
         name: PROXY_GROUPS.TRUTH_SOCIAL,
         icon: ICONS.truthSocial,
+        includeAll: true,
         proxies: (ctx) =>
             ctx.nodes.regionLayout.groupedCountries.includes(COUNTRY_KEYS.unitedStates)
                 ? [
@@ -178,11 +198,13 @@ export const serviceGroups: ServiceGroupDef[] = [
     {
         name: PROXY_GROUPS.EHENTAI,
         icon: ICONS.ehentai,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
         name: PROXY_GROUPS.PIKPAK,
         icon: ICONS.pikpak,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
@@ -193,6 +215,7 @@ export const serviceGroups: ServiceGroupDef[] = [
     {
         name: PROXY_GROUPS.SSH,
         icon: ICONS.ssh,
+        includeAll: true,
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
 ];

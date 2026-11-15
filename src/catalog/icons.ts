@@ -27,6 +27,7 @@ export const ICONS = {
     staticResources: `${QURE}/Cloudflare.png`,
     gameDownload: `${QURE}/Game.png`,
     aiService: `${QURE}/ChatGPT.png`,
+    antigravity: `${QURE}/Google_Search.png`,
     crypto: `${QURE}/Cryptocurrency_1.png`,
     finance: `${SELF}/Nasdaq.png`,
     apple: `${QURE}/Apple_2.png`,

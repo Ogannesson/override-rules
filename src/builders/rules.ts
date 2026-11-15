@@ -35,14 +35,30 @@ export function buildRules({
 }: BuildRulesInput): string[] {
     return [
         !quicEnabled ? `AND,((DST-PORT,443),(NETWORK,UDP)),REJECT` : null,
-        // AI 服务紧随 QUIC 拦截，先于其它所有分流，避免其它规则出问题时 AI 连接受牵连；
+        // Antigravity 必须先于 category-ai-!cn，否则会被 AI 规则先匹配走。
+        // 前三条是模型调用：Gemini、Claude、GPT-OSS 都经 Google 的 Cloud Code 接口转发；
+        // cloudcode-pa 与 Gemini CLI、Gemini Code Assist 共用，它们一并跟着走
+        `DOMAIN,cloudcode-pa.googleapis.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN,daily-cloudcode-pa.googleapis.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN,daily-cloudcode-pa.sandbox.googleapis.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        // aicode 与 Android Studio 的 Gemini 共用
+        `DOMAIN-SUFFIX,aicode.googleapis.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-SUFFIX,antigravity.google,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-SUFFIX,antigravity.google.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-SUFFIX,antigravity-unleash.goog,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN,antigravity-pa.googleapis.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN,antigravity.googleapis.com,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-REGEX,^antigravity-([a-z]+-)?auto-updater-[0-9]+\\.[a-z0-9-]+\\.run\\.app$,${PROXY_GROUPS.ANTIGRAVITY}`,
+        // 企业版与 Vertex AI（含区域、.rep、.mtls 端点）；全部 Vertex 流量都进本组
+        `DOMAIN-REGEX,^businessaicode(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-REGEX,^([a-z0-9-]+-)?aiplatform(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$,${PROXY_GROUPS.ANTIGRAVITY}`,
+        `DOMAIN-REGEX,^((us|eu)-)?discoveryengine(\\.mtls)?\\.googleapis\\.com$,${PROXY_GROUPS.ANTIGRAVITY}`,
+        // AI 服务紧随其后，先于其它所有分流，避免其它规则出问题时 AI 连接受牵连；
         // AI 域名的 QUIC 仍被拒绝、退回 TCP
         `GEOSITE,category-ai-!cn,${PROXY_GROUPS.AI_SERVICE}`,
-        // geosite 未收录的 AI 相关域名：Claude Desktop、Gemini CLI 的 Vertex 接口，
+        // geosite 未收录的 AI 相关域名：Claude Desktop，
         // 以及 Claude/ChatGPT 登录风控用的人机验证（需与 AI 同出口）
         `DOMAIN-SUFFIX,claude.app,${PROXY_GROUPS.AI_SERVICE}`,
-        // Vertex 区域端点形如 us-central1-aiplatform.googleapis.com，DOMAIN-SUFFIX 匹配不到
-        `DOMAIN-REGEX,^([a-z0-9-]+-)?aiplatform\\.googleapis\\.com$,${PROXY_GROUPS.AI_SERVICE}`,
         `DOMAIN-SUFFIX,hcaptcha.com,${PROXY_GROUPS.AI_SERVICE}`,
         `DOMAIN,challenges.cloudflare.com,${PROXY_GROUPS.AI_SERVICE}`,
         `DOMAIN-SUFFIX,arkoselabs.com,${PROXY_GROUPS.AI_SERVICE}`,

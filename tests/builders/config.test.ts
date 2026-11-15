@@ -40,6 +40,7 @@ const SERVICE_GROUP_NAMES = [
     PROXY_GROUPS.STATIC_RESOURCES,
     PROXY_GROUPS.GAME_DOWNLOAD,
     PROXY_GROUPS.AI_SERVICE,
+    PROXY_GROUPS.ANTIGRAVITY,
     PROXY_GROUPS.CRYPTO,
     PROXY_GROUPS.FINANCE,
     PROXY_GROUPS.APPLE,
@@ -461,6 +462,38 @@ describe("assembleConfig", () => {
         assert.equal(at(PROXY_GROUPS.GAME_DOWNLOAD), at(PROXY_GROUPS.STATIC_RESOURCES) + 1);
         assert.equal(at(PROXY_GROUPS.AI_SERVICE), at(PROXY_GROUPS.GAME_DOWNLOAD) + 1);
         assert.equal(at(PROXY_GROUPS.SSH), at(PROXY_GROUPS.SOGOU_INPUT) + 1);
+    });
+
+    it("Antigravity 组紧跟 AI服务，默认跟随 AI服务", () => {
+        const result = run({}, CONFIG);
+        const names = (result["proxy-groups"] ?? []).map((item) => item.name);
+        assert.equal(
+            names.indexOf(PROXY_GROUPS.ANTIGRAVITY),
+            names.indexOf(PROXY_GROUPS.AI_SERVICE) + 1
+        );
+
+        const antigravity = group(result, PROXY_GROUPS.ANTIGRAVITY);
+        assert.equal(antigravity?.type, "select");
+        assert.equal(antigravity?.["include-all"], true);
+        assert.match(antigravity?.icon ?? "", /\/Google_Search\.png$/);
+        assert.deepEqual(antigravity?.proxies, [
+            PROXY_GROUPS.AI_SERVICE,
+            PROXY_GROUPS.SELECT,
+            "香港节点",
+            "美国节点",
+            PROXY_GROUPS.MANUAL,
+            "DIRECT",
+        ]);
+    });
+
+    it("展平模式下 Antigravity 组仍以 AI服务 为首选", () => {
+        const result = run({}, { proxies: [{ name: "NodeA" }, { name: "NodeB" }] });
+        assert.deepEqual(group(result, PROXY_GROUPS.ANTIGRAVITY)?.proxies, [
+            PROXY_GROUPS.AI_SERVICE,
+            "NodeA",
+            "NodeB",
+            "DIRECT",
+        ]);
     });
 
     it("规则引用的策略组都存在", () => {

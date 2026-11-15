@@ -14,10 +14,25 @@ function rulesWith(overrides: Partial<BuildRulesInput> = {}): string[] {
     });
 }
 
+const ANTIGRAVITY_RULES = [
+    "DOMAIN,cloudcode-pa.googleapis.com,Antigravity",
+    "DOMAIN,daily-cloudcode-pa.googleapis.com,Antigravity",
+    "DOMAIN,daily-cloudcode-pa.sandbox.googleapis.com,Antigravity",
+    "DOMAIN-SUFFIX,aicode.googleapis.com,Antigravity",
+    "DOMAIN-SUFFIX,antigravity.google,Antigravity",
+    "DOMAIN-SUFFIX,antigravity.google.com,Antigravity",
+    "DOMAIN-SUFFIX,antigravity-unleash.goog,Antigravity",
+    "DOMAIN,antigravity-pa.googleapis.com,Antigravity",
+    "DOMAIN,antigravity.googleapis.com,Antigravity",
+    "DOMAIN-REGEX,^antigravity-([a-z]+-)?auto-updater-[0-9]+\\.[a-z0-9-]+\\.run\\.app$,Antigravity",
+    "DOMAIN-REGEX,^businessaicode(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$,Antigravity",
+    "DOMAIN-REGEX,^([a-z0-9-]+-)?aiplatform(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$,Antigravity",
+    "DOMAIN-REGEX,^((us|eu)-)?discoveryengine(\\.mtls)?\\.googleapis\\.com$,Antigravity",
+];
+
 const AI_HEAD_RULES = [
     "GEOSITE,category-ai-!cn,AI服务",
     "DOMAIN-SUFFIX,claude.app,AI服务",
-    "DOMAIN-REGEX,^([a-z0-9-]+-)?aiplatform\\.googleapis\\.com$,AI服务",
     "DOMAIN-SUFFIX,hcaptcha.com,AI服务",
     "DOMAIN,challenges.cloudflare.com,AI服务",
     "DOMAIN-SUFFIX,arkoselabs.com,AI服务",
@@ -34,11 +49,43 @@ const AI_ASN_RULES = [399358, 60808, 4167, 400243, 401551].map(
  * 每条 DOMAIN-REGEX 规则的正例与反例主机名。新增 DOMAIN-REGEX 规则时必须在此补充用例。
  */
 const DOMAIN_REGEX_CASES: Record<string, { match: string[]; noMatch: string[] }> = {
-    "^([a-z0-9-]+-)?aiplatform\\.googleapis\\.com$": {
+    "^antigravity-([a-z]+-)?auto-updater-[0-9]+\\.[a-z0-9-]+\\.run\\.app$": {
+        match: [
+            "antigravity-ide-auto-updater-974169037036.us-central1.run.app",
+            "antigravity-auto-updater-974169037036.us-central1.run.app",
+            "antigravity-auto-updater-1.europe-west1.run.app",
+        ],
+        noMatch: [
+            "other-service.us-central1.run.app",
+            "antigravity-auto-updater.us-central1.run.app",
+            "antigravity-ide-2-auto-updater-1.us-central1.run.app",
+            "antigravity-auto-updater-1.us-central1.run.app.evil.com",
+            "xantigravity-auto-updater-1.us-central1.run.app",
+        ],
+    },
+    "^businessaicode(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$": {
+        match: [
+            "businessaicode.googleapis.com",
+            "businessaicode.us.rep.googleapis.com",
+            "businessaicode.eu.rep.googleapis.com",
+            "businessaicode.mtls.googleapis.com",
+        ],
+        noMatch: [
+            "xbusinessaicode.googleapis.com",
+            "businessaicode.asia.rep.googleapis.com",
+            "businessaicode.googleapis.com.evil.com",
+            "foo.businessaicode.googleapis.com",
+        ],
+    },
+    "^([a-z0-9-]+-)?aiplatform(\\.(us|eu)\\.rep|\\.mtls)?\\.googleapis\\.com$": {
         match: [
             "aiplatform.googleapis.com",
             "us-central1-aiplatform.googleapis.com",
             "europe-west4-aiplatform.googleapis.com",
+            "aiplatform.us.rep.googleapis.com",
+            "aiplatform.eu.rep.googleapis.com",
+            "aiplatform.mtls.googleapis.com",
+            "us-central1-aiplatform.mtls.googleapis.com",
             "US-CENTRAL1-AIPLATFORM.GOOGLEAPIS.COM",
         ],
         noMatch: [
@@ -47,6 +94,21 @@ const DOMAIN_REGEX_CASES: Record<string, { match: string[]; noMatch: string[] }>
             "foo.us-central1-aiplatform.googleapis.com",
             "aiplatform.googleapis.com.evil.com",
             "aiplatformxgoogleapis.com",
+            "aiplatform.asia.rep.googleapis.com",
+        ],
+    },
+    "^((us|eu)-)?discoveryengine(\\.mtls)?\\.googleapis\\.com$": {
+        match: [
+            "discoveryengine.googleapis.com",
+            "us-discoveryengine.googleapis.com",
+            "eu-discoveryengine.mtls.googleapis.com",
+            "discoveryengine.mtls.googleapis.com",
+        ],
+        noMatch: [
+            "asia-discoveryengine.googleapis.com",
+            "xdiscoveryengine.googleapis.com",
+            "discoveryengine.googleapis.com.evil.com",
+            "foo.discoveryengine.googleapis.com",
         ],
     },
 };
@@ -153,22 +215,42 @@ describe("buildRules", () => {
     });
 });
 
-describe("buildRules：AI服务 规则", () => {
-    it("紧跟 QUIC 拦截，先于其余所有规则", () => {
+describe("buildRules：Antigravity 与 AI服务 规则", () => {
+    const HEAD_RULES = [...ANTIGRAVITY_RULES, ...AI_HEAD_RULES];
+
+    it("Antigravity 紧跟 QUIC 拦截，AI服务 紧随其后，先于其余所有规则", () => {
         const rules = rulesWith();
         assert.equal(rules[0], "AND,((DST-PORT,443),(NETWORK,UDP)),REJECT");
-        assert.deepEqual(rules.slice(1, 1 + AI_HEAD_RULES.length), AI_HEAD_RULES);
-        assert.equal(rules[1 + AI_HEAD_RULES.length], "IP-CIDR,100.64.0.0/10,Tailscale,no-resolve");
+        assert.deepEqual(rules.slice(1, 1 + HEAD_RULES.length), HEAD_RULES);
+        assert.equal(rules[1 + HEAD_RULES.length], "IP-CIDR,100.64.0.0/10,Tailscale,no-resolve");
     });
 
-    it("允许 QUIC 时 AI 规则排第一", () => {
+    it("Antigravity 规则全部位于 category-ai-!cn 之前", () => {
+        const rules = rulesWith();
+        const aiGeosite = rules.indexOf("GEOSITE,category-ai-!cn,AI服务");
+        const antigravity = rules
+            .map((rule, index) => (rule.endsWith(",Antigravity") ? index : -1))
+            .filter((index) => index >= 0);
+        assert.equal(antigravity.length, ANTIGRAVITY_RULES.length);
+        assert.ok(antigravity.every((index) => index < aiGeosite));
+    });
+
+    it("允许 QUIC 时 Antigravity 规则排第一", () => {
         const rules = rulesWith({ quicEnabled: true });
-        assert.deepEqual(rules.slice(0, AI_HEAD_RULES.length), AI_HEAD_RULES);
+        assert.deepEqual(rules.slice(0, HEAD_RULES.length), HEAD_RULES);
     });
 
     it("geosite 的 AI 规则只出现一次", () => {
         const rules = rulesWith();
         assert.equal(rules.filter((rule) => rule === "GEOSITE,category-ai-!cn,AI服务").length, 1);
+    });
+
+    it("AI服务 不再包含 aiplatform 规则", () => {
+        const rules = rulesWith({ asnEnabled: true });
+        assert.ok(
+            !rules.some((rule) => rule.includes("aiplatform") && rule.endsWith(",AI服务")),
+            "aiplatform 已并入 Antigravity"
+        );
     });
 
     it("asn 关闭时不输出 IP-ASN 规则", () => {
@@ -177,8 +259,8 @@ describe("buildRules：AI服务 规则", () => {
 
     it("asn 开启时在补充规则之后追加 Anthropic 的 IP-ASN 规则", () => {
         const rules = rulesWith({ asnEnabled: true });
-        const start = 1 + AI_HEAD_RULES.length;
-        assert.deepEqual(rules.slice(1, start), AI_HEAD_RULES);
+        const start = 1 + HEAD_RULES.length;
+        assert.deepEqual(rules.slice(1, start), HEAD_RULES);
         assert.deepEqual(rules.slice(start, start + AI_ASN_RULES.length), AI_ASN_RULES);
         assert.equal(rules.filter((rule) => rule.startsWith("IP-ASN,")).length, 5);
     });

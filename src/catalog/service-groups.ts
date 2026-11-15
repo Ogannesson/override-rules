@@ -66,6 +66,13 @@ export const serviceGroups: ServiceGroupDef[] = [
         proxies: (ctx) => ctx.lists.defaultProxies,
     },
     {
+        name: PROXY_GROUPS.ANTIGRAVITY,
+        icon: ICONS.antigravity,
+        includeAll: true,
+        // 默认跟随 AI服务 出口，需要时可单独切换
+        proxies: (ctx) => [PROXY_GROUPS.AI_SERVICE, ...ctx.lists.defaultProxies],
+    },
+    {
         name: PROXY_GROUPS.CRYPTO,
         icon: ICONS.crypto,
         includeAll: true,

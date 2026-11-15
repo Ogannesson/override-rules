@@ -19,6 +19,7 @@ export const PROXY_GROUPS = {
     STATIC_RESOURCES: "静态资源",
     GAME_DOWNLOAD: "游戏下载",
     AI_SERVICE: "AI服务",
+    ANTIGRAVITY: "Antigravity",
     CRYPTO: "加密货币",
     FINANCE: "金融服务",
     APPLE: "苹果服务",
